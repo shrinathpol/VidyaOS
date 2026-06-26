@@ -1,0 +1,9 @@
+footprint snapshot
+file write /test_mft.txt "hello memory footprint tracker"
+footprint diff
+footprint update
+footprint diff
+ls -la /
+cat /test_mft.txt
+gemini "Status check"
+shutdown

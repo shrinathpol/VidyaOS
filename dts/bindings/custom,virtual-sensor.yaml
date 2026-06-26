@@ -1,0 +1,4 @@
+# dts/bindings/custom,virtual-sensor.yaml
+description: A custom virtual sensor for the OS simulator
+compatible: "custom,virtual-sensor"
+include: sensor-device.yaml

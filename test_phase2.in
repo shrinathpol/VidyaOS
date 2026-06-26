@@ -1,0 +1,17 @@
+help
+ls
+pwd
+cd /home
+ls
+cd /
+footprint snapshot
+cat /etc/vidya/settings.json
+footprint report
+mkdir /tmp/testdir
+cd /tmp/testdir
+echo "Hello VidyaOS Phase 2" > test.txt
+cat test.txt
+footprint diff
+ls -la
+cd /
+echo "Phase 2 verification complete"

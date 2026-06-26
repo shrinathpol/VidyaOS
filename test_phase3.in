@@ -1,0 +1,24 @@
+help
+user list
+user switch root
+root123
+whoami
+user add testuser testpass123
+user list
+user switch testuser
+testpass123
+whoami
+network status
+network scan
+network connect HomeWiFi
+network status
+workspace list
+workspace 1
+workspace list
+theme list
+theme apply neon
+theme list
+cloud status
+ls
+pwd
+echo "Verification complete"

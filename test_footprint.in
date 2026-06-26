@@ -1,0 +1,15 @@
+footprint snapshot
+file write /test_mft.txt "hello memory footprint tracker"
+footprint diff
+footprint update
+footprint diff
+mkdir -p /etc/mft_dir
+touch /etc/mft_dir/config.json
+footprint diff
+footprint update /etc/mft_dir/config.json
+footprint diff
+footprint snapshot
+footprint diff
+rm -r /etc/mft_dir
+footprint diff
+shutdown

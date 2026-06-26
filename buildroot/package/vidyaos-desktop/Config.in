@@ -1,0 +1,6 @@
+config BR2_PACKAGE_VIDYAOS_DESKTOP
+	bool "vidyaos-desktop"
+	select BR2_PACKAGE_SDL2
+	select BR2_PACKAGE_SDL2_KMSDRM
+	help
+	  The display compositor, window manager, and shell for VidyaOS.

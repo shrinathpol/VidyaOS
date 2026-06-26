@@ -1,0 +1,4 @@
+python telemetry = read_file("/var/run/telemetry.json")
+python print(telemetry)
+gemini "Is my system healthy?"
+shutdown

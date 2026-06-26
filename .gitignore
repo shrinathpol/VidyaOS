@@ -1,0 +1,26 @@
+# Zephyr/CMake build directory
+build/
+
+# IDE files
+.vscode/
+.idea/
+
+# Object files and libraries
+*.o
+*.a
+*.ko
+*.obj
+*.elf
+*.bin
+*.hex
+*.lst
+*.map
+
+# Editor backups and swap files
+*~
+*.swp
+*.swo
+.DS_Store
+err.txt
+out*.txt
+*.db

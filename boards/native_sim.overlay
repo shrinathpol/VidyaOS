@@ -1,0 +1,12 @@
+/* boards/native_sim.overlay */
+
+/ {
+    my_custom_sensor: virtual_sensor_0 {
+        compatible = "custom,virtual-sensor";
+        status = "okay";
+    };
+};
+
+&sdl_dc {
+    status = "okay";
+};

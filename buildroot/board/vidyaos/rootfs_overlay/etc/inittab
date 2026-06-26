@@ -1,0 +1,15 @@
+# /etc/inittab
+#
+# Startup scripts
+::sysinit:/etc/init.d/rcS
+
+# Disable serial getty to avoid input contention with the VidyaOS interactive shell on ttyAMA0
+# console::respawn:/sbin/getty -L console 0 vt100
+
+# Standard virtual terminal console (tty1)
+tty1::respawn:/sbin/getty -L tty1 0 vt100
+
+# Stuff to do before rebooting
+::shutdown:/etc/init.d/rcK
+::shutdown:/sbin/swapoff -a
+::shutdown:/bin/umount -a -r

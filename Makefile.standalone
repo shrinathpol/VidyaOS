@@ -1,0 +1,56 @@
+CXX ?= g++
+CC ?= gcc
+CXXFLAGS ?= -std=c++17 -O2 -Iinclude -Ithirdparty/libvterm/include
+LDFLAGS ?= -Lthirdparty/libvterm -lvterm -lpthread -lSDL2 -lSDL2_ttf -lSDL2_image -lm
+
+# If building for VidyaOS KMSDRM framebuffer target
+ifeq ($(VIDYAOS),1)
+CXXFLAGS += -DVIDYAOS_KMSDRM
+endif
+
+# If building for VidyaOS Native target
+ifeq ($(NATIVE),1)
+CXXFLAGS += -DVIDYAOS_NATIVE -DVIDYAOS_KMSDRM
+LDFLAGS += -lcrypt
+PLATFORM_SRCS = platform/linux/fs.cpp platform/linux/net.cpp platform/linux/user.cpp
+else
+PLATFORM_SRCS =
+endif
+
+SRCS = src/main.cpp src/shell.cpp src/graphics.cpp src/state.cpp src/footprint.cpp $(PLATFORM_SRCS)
+OBJS = $(SRCS:.cpp=.o)
+TARGET = vidyaos-desktop
+
+VTERM_DIR = thirdparty/libvterm
+VTERM_LIB = $(VTERM_DIR)/libvterm.a
+VTERM_SRCS = $(VTERM_DIR)/src/encoding.c \
+             $(VTERM_DIR)/src/keyboard.c \
+             $(VTERM_DIR)/src/mouse.c \
+             $(VTERM_DIR)/src/parser.c \
+             $(VTERM_DIR)/src/pen.c \
+             $(VTERM_DIR)/src/screen.c \
+             $(VTERM_DIR)/src/state.c \
+             $(VTERM_DIR)/src/unicode.c \
+             $(VTERM_DIR)/src/vterm.c
+VTERM_OBJS = $(VTERM_SRCS:.c=.o)
+
+all: $(VTERM_LIB) $(TARGET)
+
+$(VTERM_LIB): $(VTERM_OBJS)
+	ar rcs $@ $(VTERM_OBJS)
+
+$(VTERM_DIR)/src/%.o: $(VTERM_DIR)/src/%.c
+	$(CC) -O2 -I$(VTERM_DIR)/include -c $< -o $@
+
+$(TARGET): $(OBJS) $(VTERM_LIB)
+	$(CXX) $(OBJS) -o $(TARGET) $(LDFLAGS)
+
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+clean:
+	rm -f $(OBJS) $(TARGET) $(VTERM_OBJS)
+	# Do not delete libvterm.a unless building from scratch is explicitly required,
+	# but we can allow cleaning if the directory is clean.
+	# rm -f $(VTERM_LIB)
+

@@ -28,12 +28,12 @@
 
 **VidyaOS** is a hybrid embedded operating system simulator that combines:
 
-- A **C++17 kernel core** with a software framebuffer graphics engine rendering a full desktop at **320×240** (upscaled to any display resolution via SDL2)
-- A **GNU-compatible CLI shell** with virtual filesystem, package manager, and multi-language REPL support
-- A **Node.js orchestrator daemon** that bridges the C++ engine to cloud services and exposes hardware telemetry via a C++ N-API addon
-- A **6-window GUI desktop** with full mouse-driven interaction, a floating Start Menu, a live HUD widget, and a clock taskbar
-- A **virtual sensor driver** (`virtual_sensor.c`) compatible with the Zephyr sensor subsystem
-- Dual deployment: runs natively on **Linux x86-64** as a standalone binary *and* on **Zephyr RTOS** (`native_sim` / `nrf9161dk`) with an SDL2 display backend
+- A **C++17 kernel core** with a software graphics engine rendering a full desktop directly at **native display resolution** (e.g. 1280×720 or 1920×1080) with anti-aliased TrueType fonts (TTF).
+- A **GNU-compatible CLI shell** with virtual filesystem, package manager, and multi-language REPL support.
+- A **Node.js orchestrator daemon** that bridges the C++ engine to cloud services and exposes hardware telemetry via a C++ N-API addon.
+- An **8-window GUI desktop** with full mouse-driven interaction, a floating Start Menu, window docking / Aero-snapping, tiling layouts, and a centralized taskbar dock.
+- A **virtual sensor driver** (`virtual_sensor.c`) compatible with the Zephyr sensor subsystem.
+- Dual deployment: runs natively on **Linux x86-64** as a standalone binary *and* on **Zephyr RTOS** (`native_sim` / `nrf9161dk`) with an SDL2 display backend.
 
 ---
 
@@ -44,8 +44,8 @@
 │                        VidyaOS Stack                         │
 │                                                              │
 │  ┌──────────────────────────────────────────────────────┐   │
-│  │          GUI Desktop  (320×240 Framebuffer)           │   │
-│  │  Start Menu · 6 Windows · HUD Widget · Taskbar       │   │
+│  │          GUI Desktop (Native Framebuffer)            │   │
+│  │  Start Menu · 8 Windows · HUD Widget · Taskbar Dock  │   │
 │  └───────────────────────┬──────────────────────────────┘   │
 │                          │ draw_desktop()                    │
 │  ┌───────────────────────▼──────────────────────────────┐   │
@@ -85,15 +85,16 @@
 ## Features
 
 ### 🖱️ Desktop GUI
-- **6-Window Desktop** — Terminal, File Manager, System Monitor, Chrome Browser, Settings, Control Panel
+- **8-Window Desktop** — Terminal, File Manager, System Monitor, Chrome Browser, Settings, Control Panel, Text Editor, App Store
 - **Floating Start Menu** — 8-item launcher with hover highlighting and glassmorphic transparency
 - **System HUD Widget** — Live CPU%, RAM (KB), and Temperature overlay rendered directly in the framebuffer
-- **Taskbar** — Always-visible bottom bar with Vidya Menu button and real-time clock
-- **Mouse Cursor** — Full arrow cursor rendered in the framebuffer, tracked pixel-accurately via `SDL_RenderWindowToLogical()`
-- **Alpha Blending** — All windows have translucent drop shadows and glassmorphic backgrounds
-- **Dark / Light Theme** — Switchable globally from the Settings app
-- **Adaptive SDL2 Scaling** — Auto-detects native display resolution (1080p / 1440p / 4K UHD) and scales the virtual 320×240 canvas to the largest integer multiple that fits, with bilinear filtering for smooth upscaling
-- **Resizable Window** — The SDL2 window is resizable; logical coordinates always map to the virtual 320×240 grid regardless of physical window size
+- **Centering Taskbar Dock** — Always-visible bottom dock showing app icons with active/inactive indicators and real-time clock
+- **Aero-Snapping & Tiling** — Supports dragging windows to screen borders to snap to halves or quarters, or toggling automatic screen-tiling grid layout
+- **Anti-Aliased Vector Fonts** — Implements standard vector TrueType Fonts (TTF) (`DejaVuSans` and `DejaVuSansMono`) for all UI labels, inputs, and terminals
+- **Alpha Blending & Shadows** — Concentric drop shadows and glassmorphic translucency for windows
+- **Unified Settings Engine** — Manages Wi-Fi, VPN, A/B slots system updates, AppArmor security hardening, accessibility screen reader (TTS) + locales, Bluetooth, and MQTT Smart Home devices
+- **Real Web Browser Simulator**: Bookmarks navigation bar, simulated downloads dropdown queue, and a simulated Flathub store that performs flatpak installation packages routing
+- **IDE Lite Text Editor**: Side-by-side navigator tree view, syntax coloring, code line-numbering gutter, and multiplexed bottom terminal panes
 
 ### 🐧 Linux-Compatible Shell
 - Full **GNU coreutils** subset: `pwd`, `cd`, `ls`, `cat`, `echo`, `grep`, `cp`, `mv`, `rm`, `mkdir`, `touch`
@@ -184,7 +185,7 @@ EmbeddedSystem/
 
 ```bash
 # C++17 compiler + POSIX threads + SDL2 display library
-sudo apt install g++ libsdl2-dev libpthread-stubs0-dev
+sudo apt install g++ libsdl2-dev
 ```
 
 ### Zephyr RTOS Build
@@ -205,30 +206,18 @@ node-gyp rebuild     # Compiles the C++ resolution.node N-API addon
 
 ## Build & Run — Linux Standalone
 
-### Quick Build
+### Build Standalone
+To compile the standalone binary (which compiles local static `libvterm`, PTY integration, sandboxed filesystem layers, and graphics), run:
 
 ```bash
-cd /home/shrinathpol/EmbeddedSystem
-
-g++ -std=c++17 -O2 -I./include \
-    src/main.cpp src/shell.cpp src/graphics.cpp src/state.cpp \
-    -o vidya_os_standalone -lpthread -lSDL2
+make -f Makefile.standalone
 ```
 
-> **Note:** `virtual_sensor.c` is Zephyr-only and is **not** compiled into the standalone binary.
-
-### Rebuild and Run (one-liner)
-
-```bash
-g++ -std=c++17 -O2 -Iinclude \
-    src/main.cpp src/shell.cpp src/graphics.cpp src/state.cpp \
-    -o vidya_os_standalone -lpthread -lSDL2 && ./vidya_os_standalone
-```
-
-### Run Interactively
+### Run Standalone
+Launch the desktop compositor:
 
 ```bash
-./vidya_os_standalone
+./vidyaos-desktop
 ```
 
 You'll see the boot animation, then a `VidyaOS>` prompt:
@@ -254,8 +243,8 @@ The SDL2 window opens simultaneously. Shell commands can be typed in **both** th
 ### Run in Script Mode
 
 ```bash
-./vidya_os_standalone < test_gui.in
-./vidya_os_standalone < test_telemetry.in
+./vidyaos-desktop < test_gui.in
+./vidyaos-desktop < test_telemetry.in
 ```
 
 ---
@@ -319,6 +308,8 @@ west flash
 | Chrome Browser | `apt install chrome` → `desktop open chrome`| Double-click Chrome icon (after install)  |
 | Settings       | `desktop open settings`                     | Start Menu → Settings                     |
 | Control Panel  | `desktop open controlpanel`                 | Start Menu → Ctrl Panel                   |
+| Text Editor    | `desktop open editor`                       | Start Menu → Text Editor                  |
+| App Store      | `desktop open appstore`                     | Start Menu → App Store                    |
 
 ### Start Menu
 
@@ -350,11 +341,11 @@ System Controls:
   shutdown           Exit the simulator
 
 Desktop & Mouse:
-  desktop list                List status of all 6 desktop windows
+  desktop list                List status of all 8 desktop windows
   desktop open <app>          Open a window
   desktop close <app>         Close a window
-    <app> = terminal | files | monitor | chrome | settings | controlpanel
-  mouse move <x> <y>          Move virtual cursor to (x, y) in 320×240 space
+    <app> = terminal | files | monitor | chrome | settings | controlpanel | editor | appstore
+  mouse move <x> <y>          Move virtual cursor to (x, y) in high-resolution coordinates
   mouse click                 Click at current cursor position
   mouse status                Print current cursor coordinates
 
@@ -379,6 +370,11 @@ File Operations:
 System Info:
   neofetch                    Display Linux-style system information
   gemini                      AI hardware analysis via Gemini (uses live telemetry)
+
+Memory Footprint Change Tracker:
+  footprint snapshot          Build a fresh footprint snapshot and store it in memory
+  footprint diff              Compare live filesystem against stored snapshot
+  footprint update [path]     Incrementally sync specified path (or all) to snapshot
 
 Maintenance:
   upgrade                     Mock OS firmware upgrade (reboots)
@@ -531,30 +527,27 @@ gemini
 
 ## Mouse & GUI Interaction
 
-The virtual framebuffer uses a **320×240 coordinate space**. The SDL2 renderer automatically maps physical window pixels to logical coordinates via `SDL_RenderSetLogicalSize()` and `SDL_RenderWindowToLogical()`, so coordinates remain correct at any window size or display scale.
+The system renders directly at **native display resolution** (e.g. 1280×720 or 1920×1080). Screen coordinates mapped by mouse commands are relative to the physical window dimensions.
 
 ```bash
-mouse move <x> <y>    # x: 0–319, y: 0–239
+mouse move <x> <y>    # Move virtual mouse cursor to (x, y)
 mouse click           # Fires handle_desktop_click(x, y)
 mouse status          # Shows current (x, y)
 ```
 
-### Common Click Coordinates
+### Common Click Coordinates (assuming 1280x720 window resolution)
 
 | Action                      | x   | y   |
 |-----------------------------|-----|-----|
-| Open Start Menu             | 50  | 225 |
-| Start Menu → Terminal       | 50  | 71  |
-| Start Menu → Files          | 50  | 89  |
-| Start Menu → Monitor        | 50  | 107 |
-| Start Menu → Browser        | 50  | 125 |
-| Start Menu → Settings       | 50  | 143 |
-| Start Menu → Control Panel  | 50  | 161 |
-| Start Menu → Lock           | 50  | 179 |
-| Start Menu → Shutdown       | 50  | 197 |
-| Desktop icon → Terminal     | 37  | 32  |
-| Desktop icon → Files        | 37  | 99  |
-| Desktop icon → Monitor      | 37  | 162 |
+| Open Start Menu             | 50  | 700 |
+| Start Menu → Terminal       | 50  | 330 |
+| Start Menu → Files          | 50  | 360 |
+| Start Menu → Monitor        | 50  | 390 |
+| Start Menu → Browser        | 50  | 420 |
+| Start Menu → Settings       | 50  | 450 |
+| Start Menu → Control Panel  | 50  | 480 |
+| Start Menu → Lock           | 50  | 510 |
+| Start Menu → Shutdown       | 50  | 540 |
 
 ---
 
@@ -568,9 +561,9 @@ apt install chrome
 desktop open settings
 desktop open controlpanel
 desktop list
-mouse move 50 225
+mouse move 50 700
 mouse click
-mouse move 50 125
+mouse move 50 420
 mouse click
 desktop list
 sensor status
@@ -578,7 +571,7 @@ gemini
 shutdown
 EOF
 
-./vidya_os_standalone < my_session.in
+./vidyaos-desktop < my_session.in
 ```
 
 Included test scripts:
@@ -604,5 +597,3 @@ Included test scripts:
 
 Built for educational and embedded systems research purposes.  
 VidyaOS — *"Vidya" (विद्या) means knowledge in Sanskrit.*
-# VidyaOS
-# VidyaOS
