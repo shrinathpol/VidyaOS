@@ -1,0 +1,16 @@
+{
+  "theme": "dark",
+  "scale": 1,
+  "wallpaper": 0,
+  "accent": 0,
+  "wifi": true,
+  "volume": 100,
+  "vpn": false,
+  "apparmor": true,
+  "screen_reader": false,
+  "locale": "en_US",
+  "bluetooth": false,
+  "active_slot": "A",
+  "inactive_slot": "B",
+  "upgrade_pending": false
+}

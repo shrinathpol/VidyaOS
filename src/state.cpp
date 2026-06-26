@@ -1,5 +1,6 @@
 #include "state.h"
 #include "footprint.h"
+#include "browser.h"
 #include <fstream>
 #include <sstream>
 #include <filesystem>
@@ -120,7 +121,9 @@ std::vector<TermPane> term_panes = {
 };
 bool editor_terminal_focused = false;
 bool downloads_panel_open = false;
+int browser_scroll_y = 0;
 int active_term_pane_idx = 0;
+bool dev_mode_enabled = false;
 std::string active_system_slot = "A";
 std::string inactive_system_slot = "B";
 bool slot_upgrade_pending = false;
@@ -237,7 +240,15 @@ void push_notification(const std::string& msg) {
     if (notifications.size() > 20) {
         notifications.pop_back();
     }
+    if (screen_reader_enabled) {
+#ifdef VIDYAOS_NATIVE
+        system(("espeak \"" + msg + "\" &").c_str());
+#endif
+    }
     if (!system_muted) {
+#ifdef VIDYAOS_NATIVE
+        system("pw-play /usr/share/sounds/notification.wav >/dev/null 2>&1 &");
+#endif
         printf("[PipeWire Alert] Playing sound 'notification.wav' at volume %d%%\n", system_volume);
         fflush(stdout);
     }
@@ -606,6 +617,7 @@ void save_settings_to_file() {
             out << "  \"screen_reader\": " << (screen_reader_enabled ? "true" : "false") << ",\n";
             out << "  \"locale\": \"" << current_locale << "\",\n";
             out << "  \"bluetooth\": " << (bluetooth_enabled ? "true" : "false") << ",\n";
+            out << "  \"dev_mode_enabled\": " << (dev_mode_enabled ? "true" : "false") << ",\n";
             out << "  \"active_slot\": \"" << active_system_slot << "\",\n";
             out << "  \"inactive_slot\": \"" << inactive_system_slot << "\",\n";
             out << "  \"upgrade_pending\": " << (slot_upgrade_pending ? "true" : "false") << "\n";
@@ -619,6 +631,26 @@ void save_settings_to_file() {
 }
 
 void load_settings_from_file() {
+#ifdef VIDYAOS_NATIVE
+    char rauc_buf[64];
+    FILE* rauc_p = popen("rauc status --key bootname 2>/dev/null", "r");
+    if (rauc_p) {
+        if (fgets(rauc_buf, sizeof(rauc_buf), rauc_p)) {
+            std::string slot = rauc_buf;
+            while (!slot.empty() && (slot.back() == '\n' || slot.back() == '\r' || slot.back() == ' ')) {
+                slot.pop_back();
+            }
+            if (slot == "slot0" || slot == "A") {
+                active_system_slot = "A";
+                inactive_system_slot = "B";
+            } else if (slot == "slot1" || slot == "B") {
+                active_system_slot = "B";
+                inactive_system_slot = "A";
+            }
+        }
+        pclose(rauc_p);
+    }
+#endif
     std::string path = "/etc/vidya/settings.json";
     std::string rpath = translate_path(path);
     std::ifstream in(rpath);
@@ -682,6 +714,9 @@ void load_settings_from_file() {
             else if (line.find("\"bluetooth\"") != std::string::npos) {
                 bluetooth_enabled = (line.find("true") != std::string::npos);
             }
+            else if (line.find("\"dev_mode_enabled\"") != std::string::npos) {
+                dev_mode_enabled = (line.find("true") != std::string::npos);
+            }
             else if (line.find("\"active_slot\"") != std::string::npos) {
                 size_t colon = line.find(':');
                 if (colon != std::string::npos) {
@@ -740,6 +775,9 @@ void handle_desktop_click(int x, int y, bool is_double_click) {
             if (sha256(login_pass_buffer) == user_passwords[user]) {
                 currentUser = user;
                 system_logged_in = true;
+#ifdef VIDYAOS_NATIVE
+                system("pw-play /usr/share/sounds/login.ogg >/dev/null 2>&1 &");
+#endif
                 current_working_directory = (user == "root") ? "/root" : "/home/" + user;
                 fs::create_directories(translate_path(current_working_directory));
                 set_default_metadata(current_working_directory, true);
@@ -1168,24 +1206,28 @@ void handle_desktop_click(int x, int y, bool is_double_click) {
             // Check Bookmarks Bar clicks (y: ca_y + 44 .. ca_y + 68)
             if (y >= ca_y + 44 && y <= ca_y + 68) {
                 if (x >= ca_x + 10 && x <= ca_x + 100) {
-                    chrome_url = "google.com";
+                    chrome_url = "https://google.com";
                     browser_history.push_back(chrome_url);
                     browser_history_idx = browser_history.size() - 1;
+                    browser_fetch_async(chrome_url);
                 }
                 else if (x >= ca_x + 110 && x <= ca_x + 200) {
-                    chrome_url = "github.com";
+                    chrome_url = "https://github.com";
                     browser_history.push_back(chrome_url);
                     browser_history_idx = browser_history.size() - 1;
+                    browser_fetch_async(chrome_url);
                 }
                 else if (x >= ca_x + 210 && x <= ca_x + 310) {
-                    chrome_url = "wikipedia.org";
+                    chrome_url = "https://wikipedia.org";
                     browser_history.push_back(chrome_url);
                     browser_history_idx = browser_history.size() - 1;
+                    browser_fetch_async(chrome_url);
                 }
                 else if (x >= ca_x + 320 && x <= ca_x + 410) {
-                    chrome_url = "flathub.org";
+                    chrome_url = "https://flathub.org";
                     browser_history.push_back(chrome_url);
                     browser_history_idx = browser_history.size() - 1;
+                    browser_fetch_async(chrome_url);
                 }
                 else if (x >= ca_x + 420 && x <= ca_x + 510) {
                     DownloadItem dl;
@@ -1212,9 +1254,11 @@ void handle_desktop_click(int x, int y, bool is_double_click) {
                     if (browser_history_idx + 1 < (int)browser_history.size()) {
                         browser_history.erase(browser_history.begin() + browser_history_idx + 1, browser_history.end());
                     }
-                    browser_history.push_back(link.url);
+                    
+                    chrome_url = browser_normalise_url(link.url);
+                    browser_history.push_back(chrome_url);
                     browser_history_idx = browser_history.size() - 1;
-                    chrome_url = link.url;
+                    browser_fetch_async(chrome_url);
                     return;
                 }
             }
@@ -1226,7 +1270,7 @@ void handle_desktop_click(int x, int y, bool is_double_click) {
             // Sidebar Category clicks
             if (x >= ca_x && x <= ca_x + 160) {
                 int tab = (y - (ca_y + 8)) / 38;
-                if (tab >= 0 && tab < 11) {
+                if (tab >= 0 && tab < 12) {
                     settings_active_tab = tab;
                 }
                 return;
@@ -1308,11 +1352,25 @@ void handle_desktop_click(int x, int y, bool is_double_click) {
                 // Wi-Fi toggle
                 if (y >= row_y(1) + 14 && y <= row_y(1) + 40 && x >= px + pw - 60 && x <= px + pw - 12) {
                     wifi_enabled = !wifi_enabled;
+#ifdef VIDYAOS_NATIVE
+                    if (wifi_enabled) {
+                        system("nmcli radio wifi on >/dev/null 2>&1 &");
+                    } else {
+                        system("nmcli radio wifi off >/dev/null 2>&1 &");
+                    }
+#endif
                     save_settings_to_file();
                 }
                 // VPN toggle
                 else if (y >= row_y(2) + 14 && y <= row_y(2) + 40 && x >= px + pw - 60 && x <= px + pw - 12) {
                     vpn_enabled = !vpn_enabled;
+#ifdef VIDYAOS_NATIVE
+                    if (vpn_enabled) {
+                        system("nmcli connection up my_vpn >/dev/null 2>&1 &");
+                    } else {
+                        system("nmcli connection down my_vpn >/dev/null 2>&1 &");
+                    }
+#endif
                     save_settings_to_file();
                 }
             }
@@ -1357,14 +1415,21 @@ void handle_desktop_click(int x, int y, bool is_double_click) {
                 // Check Updates
                 if (x >= px && x <= px + 150 && y >= row_y(1) + 18 && y <= row_y(1) + 48) {
                     update_check_progress = 0;
+#ifdef VIDYAOS_NATIVE
+                    // Trigger a check of update bundle
+                    system("mkdir -p /var/updates; wget -q -O /var/updates/update.raucb http://update.vidyaos.local/update.raucb &");
+#endif
                     push_notification("Checking for system updates...");
                 }
                 // Download update
                 else if (x >= px && x <= px + 200 && y >= row_y(2) + 18 && y <= row_y(2) + 48) {
                     slot_upgrade_pending = true;
                     inactive_system_slot = "B (Version 1.1.0 Ready)";
+#ifdef VIDYAOS_NATIVE
+                    system("rauc install /var/updates/update.raucb >/dev/null 2>&1 &");
+#endif
                     save_settings_to_file();
-                    push_notification("Update applied to inactive slot B");
+                    push_notification("Update applied to inactive slot B via RAUC");
                 }
                 // Reboot & Swap
                 else if (slot_upgrade_pending && x >= px && x <= px + 200 && y >= row_y(3) + 18 && y <= row_y(3) + 48) {
@@ -1372,6 +1437,9 @@ void handle_desktop_click(int x, int y, bool is_double_click) {
                     slot_upgrade_pending = false;
                     save_settings_to_file();
                     push_notification("Rebooted and swapped slot to " + active_system_slot);
+#ifdef VIDYAOS_NATIVE
+                    system("reboot");
+#endif
                 }
             }
             else if (settings_active_tab == 7) { // Hardening
@@ -1380,6 +1448,10 @@ void handle_desktop_click(int x, int y, bool is_double_click) {
                     apparmor_enabled = !apparmor_enabled;
                     save_settings_to_file();
                     push_notification(apparmor_enabled ? "AppArmor Policies Activated" : "AppArmor Policies Disabled");
+#ifdef VIDYAOS_NATIVE
+                    if (apparmor_enabled) system("aa-enforce /etc/apparmor.d/* >/dev/null 2>&1");
+                    else system("aa-complain /etc/apparmor.d/* >/dev/null 2>&1");
+#endif
                 }
                 // Firewall Blocks (Terminal, Browser, App Store)
                 else if (y >= row_y(3) && y <= row_y(3) + 100) {
@@ -1389,6 +1461,16 @@ void handle_desktop_click(int x, int y, bool is_double_click) {
                         firewall_rules[apps[idx]] = !firewall_rules[apps[idx]];
                         save_settings_to_file();
                         push_notification("Firewall rules updated for " + apps[idx]);
+#ifdef VIDYAOS_NATIVE
+                        std::string target = (apps[idx] == "Browser") ? "chrome" : "apt"; 
+                        if (firewall_rules[apps[idx]]) {
+                            std::string cmd = "iptables -D OUTPUT -m owner --cmd-owner " + target + " -j DROP >/dev/null 2>&1";
+                            system(cmd.c_str());
+                        } else {
+                            std::string cmd = "iptables -A OUTPUT -m owner --cmd-owner " + target + " -j DROP >/dev/null 2>&1";
+                            system(cmd.c_str());
+                        }
+#endif
                     }
                 }
             }
@@ -1403,14 +1485,23 @@ void handle_desktop_click(int x, int y, bool is_double_click) {
                 else if (y >= row_y(2) + 18 && y <= row_y(2) + 48) {
                     if (x >= px && x <= px + 70) {
                         current_locale = "en_US";
+#ifdef VIDYAOS_NATIVE
+                        system("localectl set-locale LANG=en_US.UTF-8");
+#endif
                         save_settings_to_file();
                         push_notification("Locale changed to US English");
                     } else if (x >= px + 80 && x <= px + 150) {
                         current_locale = "es_ES";
+#ifdef VIDYAOS_NATIVE
+                        system("localectl set-locale LANG=es_ES.UTF-8");
+#endif
                         save_settings_to_file();
                         push_notification("Locale cambiado a Español");
                     } else if (x >= px + 160 && x <= px + 230) {
                         current_locale = "de_DE";
+#ifdef VIDYAOS_NATIVE
+                        system("localectl set-locale LANG=de_DE.UTF-8");
+#endif
                         save_settings_to_file();
                         push_notification("Sprachauswahl geändert in Deutsch");
                     }
@@ -1449,6 +1540,13 @@ void handle_desktop_click(int x, int y, bool is_double_click) {
                 // Bluetooth Toggle
                 if (y >= row_y(1) + 14 && y <= row_y(1) + 40 && x >= px + pw - 60 && x <= px + pw - 12) {
                     bluetooth_enabled = !bluetooth_enabled;
+#ifdef VIDYAOS_NATIVE
+                    if (bluetooth_enabled) {
+                        system("bluetoothctl power on >/dev/null 2>&1 &");
+                    } else {
+                        system("bluetoothctl power off >/dev/null 2>&1 &");
+                    }
+#endif
                     save_settings_to_file();
                     push_notification(bluetooth_enabled ? "Bluetooth enabled" : "Bluetooth disabled");
                 }
@@ -1456,6 +1554,11 @@ void handle_desktop_click(int x, int y, bool is_double_click) {
                 else if (bluetooth_enabled && y >= row_y(3) && y <= row_y(3) + 120) {
                     int idx = (y - row_y(3)) / 36;
                     if (idx >= 0 && idx < 3) {
+#ifdef VIDYAOS_NATIVE
+                        std::string macs[] = {"AA:BB:CC:11:22:33", "AA:BB:CC:44:55:66", "AA:BB:CC:77:88:99"};
+                        system(("bluetoothctl pair " + macs[idx] + " >/dev/null 2>&1 &").c_str());
+                        system(("bluetoothctl connect " + macs[idx] + " >/dev/null 2>&1 &").c_str());
+#endif
                         push_notification("Bluetooth toggled for " + bluetooth_devices[idx]);
                     }
                 }
@@ -1491,6 +1594,11 @@ void handle_desktop_click(int x, int y, bool is_double_click) {
             // Firewall incoming traffic toggle
             else if (x >= rx2 + cw2 - 68 && x <= rx2 + cw2 - 20 && y >= py + 34 && y <= py + 60) {
                 firewall_allow_incoming = !firewall_allow_incoming;
+                save_settings_to_file();
+#ifdef VIDYAOS_NATIVE
+                if (firewall_allow_incoming) system("iptables -P INPUT ACCEPT >/dev/null 2>&1");
+                else system("iptables -P INPUT DROP >/dev/null 2>&1");
+#endif
             }
             // Rules
             else {
@@ -1499,6 +1607,17 @@ void handle_desktop_click(int x, int y, bool is_double_click) {
                     int ry2 = py + 82 + r * 42;
                     if (x >= rx2 + cw2 - 70 && x <= rx2 + cw2 - 10 && y >= ry2 - 4 && y <= ry2 + 20) {
                         firewall_rules[rules[r].k] = !firewall_rules[rules[r].k];
+                        save_settings_to_file();
+#ifdef VIDYAOS_NATIVE
+                        std::string target = (std::string(rules[r].k) == "Browser") ? "chrome" : "apt"; 
+                        if (firewall_rules[rules[r].k]) {
+                            std::string cmd = "iptables -D OUTPUT -m owner --cmd-owner " + target + " -j DROP >/dev/null 2>&1";
+                            system(cmd.c_str());
+                        } else {
+                            std::string cmd = "iptables -A OUTPUT -m owner --cmd-owner " + target + " -j DROP >/dev/null 2>&1";
+                            system(cmd.c_str());
+                        }
+#endif
                         break;
                     }
                 }

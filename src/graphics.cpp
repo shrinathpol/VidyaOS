@@ -7,6 +7,7 @@
 #include "state.h"
 #include "footprint.h"
 #include "font.h"
+#include "browser.h"
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
@@ -1122,112 +1123,89 @@ static void render_browser(SDL_Renderer *r, int wx, int wy, int ww, int wh) {
     draw_bookmark_tab(ca.x+320, "🛍️ Store", chrome_url == "store.html" || chrome_url == "vidyaos://store");
 
     // Content area starting below bookmarks bar
+    extern int browser_scroll_y;
     int cy = ca.y+nbh+bmh+8;
     browser_links.clear();
 
-    if (chrome_url == "flathub.org") {
-        ui_text(r, ca.x+20, cy+10, "Flathub App Store", 0x111111FF, fLG);
-        ui_text(r, ca.x+20, cy+32, "Download sandbox Flatpak applications directly", 0x666666FF, fSM);
-        ui_line(r, ca.x+20, cy+52, ca.x+ca.w-20, cy+52, 0xDDDDDDFF);
-
-        struct MockFlatApp { std::string name; std::string pkg; std::string desc; uint32_t color; };
-        std::vector<MockFlatApp> flat_apps = {
-            {"Visual Studio Code", "vscode", "Developer IDE & Editor", 0x007ACCFF},
-            {"VLC Media Player", "vlc", "Multimedia audio & video player", 0xFF8800FF},
-            {"Mozilla Firefox", "firefox", "Secure fast web browser client", 0xE66000FF},
-            {"GIMP Image Editor", "gimp", "GNU Image Manipulation Tool", 0x5C3A21FF}
-        };
-
-        int item_y = cy + 64;
-        for (size_t a=0; a<flat_apps.size(); ++a) {
-            ui_rounded(r, ca.x+20, item_y, ca.w-40, 52, 8, 0xFFFFFFFF);
-            ui_border(r, ca.x+20, item_y, ca.w-40, 52, 0xE0E0E0FF);
-
-            ui_rounded(r, ca.x+30, item_y+10, 32, 32, 6, flat_apps[a].color);
-            ui_textC(r, ca.x+46, item_y+18, flat_apps[a].name.substr(0,1).c_str(), 0xFFFFFFFF, fSM);
-
-            ui_text(r, ca.x+72, item_y+10, flat_apps[a].name.c_str(), 0x1D1D1FFF, fSM);
-            ui_text(r, ca.x+72, item_y+28, flat_apps[a].desc.c_str(), 0x666666FF, fXS);
-
-            bool is_inst = apt_installed_packages[flat_apps[a].pkg];
-            int bw = 90;
-            int bx = ca.x+ca.w-bw-30;
-            if (is_inst) {
-                ui_btn(r, bx, item_y+10, bw, 32, "Installed", 0xD1F2D9FF, 0x1E5631FF, fXS);
-            } else {
-                ui_btn(r, bx, item_y+10, bw, 32, "Download", C_ACCENT, C_TEXT_PRI, fXS);
-                browser_links.push_back({bx, item_y+10, bx+bw, item_y+42, "download:" + flat_apps[a].pkg});
-            }
-
-            item_y += 60;
-        }
-    }
-    else if (chrome_url.find("google.com")!=std::string::npos) {
-        ui_textC(r, ca.x+ca.w/2, cy+20, "G", 0x4285F4FF, fXXL);
-        int gw=0,gh=0; TTF_SizeUTF8(fXXL,"G",&gw,&gh);
-        std::pair<const char*,uint32_t> letters[]={{"o",0xEA4335FF},{"o",0xFBBC04FF},
-            {"g",0x4285F4FF},{"l",0x34A853FF},{"e",0xEA4335FF}};
-        int lx = ca.x+ca.w/2+gw/2;
-        for (auto& [ch,col]: letters) {
-            ui_text(r, lx, cy+20, ch, col, fXXL);
-            int w2=0,h2=0; TTF_SizeUTF8(fXXL,ch,&w2,&h2);
-            lx += w2;
-        }
-        ui_rounded(r, ca.x+ca.w/2-200, cy+80, 400, 44, 22, 0xFFFFFFFF);
-        ui_border(r, ca.x+ca.w/2-200, cy+80, 400, 44, 0xDFDFDFFF);
-        ui_text(r, ca.x+ca.w/2-180, cy+94, "Search VidyaOS...", 0x999999FF, fMD);
-        int lnky=cy+148;
-        struct {const char *t; const char *u;} lnks[]={
-            {"vidyaos.local","index.html"},
-            {"flathub.org","flathub.org"}
-        };
-        for (auto &[t,u]: lnks) {
-            ui_text(r, ca.x+ca.w/2-160, lnky, t, 0x1A0DABFF, fMD);
-            int tw2=0,th2=0; TTF_SizeUTF8(fMD,t,&tw2,&th2);
-            ui_line(r, ca.x+ca.w/2-160, lnky+th2, ca.x+ca.w/2-160+tw2, lnky+th2, 0x1A0DABFF);
-            browser_links.push_back({ca.x+ca.w/2-160, lnky, ca.x+ca.w/2-160+tw2, lnky+th2, u});
-            lnky += 28;
-        }
-    } else if (chrome_url == "github.com") {
-        ui_text(r, ca.x+20, cy+10, "GitHub - VidyaOS/kernel", 0x111111FF, fLG);
-        ui_text(r, ca.x+20, cy+32, "VidyaOS official repository tree", 0x666666FF, fSM);
-        ui_line(r, ca.x+20, cy+52, ca.x+ca.w-20, cy+52, 0xDDDDDDFF);
-        
-        ui_text(r, ca.x+30, cy+70, "📁 src/ - Core kernel features", 0x1D1D1FFF, fSM);
-        ui_text(r, ca.x+30, cy+94, "📁 include/ - Kernel declarations", 0x1D1D1FFF, fSM);
-        ui_text(r, ca.x+30, cy+118, "📄 Makefile.standalone - Standalone compilation builder", 0x1D1D1FFF, fSM);
-    } else if (chrome_url == "wikipedia.org") {
-        ui_text(r, ca.x+20, cy+10, "Wikipedia: VidyaOS", 0x111111FF, fLG);
-        ui_text(r, ca.x+20, cy+32, "The free virtual encyclopedia", 0x666666FF, fSM);
-        ui_line(r, ca.x+20, cy+52, ca.x+ca.w-20, cy+52, 0xDDDDDDFF);
-
-        ui_text(r, ca.x+30, cy+70, "VidyaOS is an agentic, microkernel-style operating system framework", 0x1D1D1FFF, fSM);
-        ui_text(r, ca.x+30, cy+90, "designed to render standard high-fidelity desktop widgets directly", 0x1D1D1FFF, fSM);
-        ui_text(r, ca.x+30, cy+110, "at the native hardware resolution using SDL2 graphic framebuffers.", 0x1D1D1FFF, fSM);
+    if (browser_is_fetching()) {
+        ui_textC(r, ca.x+ca.w/2, cy+40, "Loading...", 0x888888FF, fLG);
     } else {
-        std::string target_file = chrome_url;
-        if (target_file.rfind("file:///var/www/", 0) == 0) {
-            target_file = "/var/www/" + target_file.substr(16);
-        } else if (target_file.rfind("vidyaos://", 0) == 0) {
-            target_file = "/var/www/" + target_file.substr(10);
-        } else if (target_file == "vidyaos.local") {
-            target_file = "/var/www/index.html";
-        } else if (target_file == "news.local") {
-            target_file = "/var/www/news.html";
-        } else if (target_file == "mail.local") {
-            target_file = "/var/www/mail.html";
-        } else if (target_file == "store.local") {
-            target_file = "/var/www/store.html";
-        } else if (target_file.find('/') == std::string::npos) {
-            target_file = "/var/www/" + target_file;
-        }
-
-        if (virtual_files.count(target_file)) {
-            parse_and_render_html(r, virtual_files[target_file], ca.x + 20, cy, ca.w - 40, ca.h - (cy - ca.y) - 20);
+        const FetchResult& res = browser_get_result();
+        if (res.success) {
+            int clip_y = cy;
+            SDL_Rect old_clip;
+            SDL_RenderGetClipRect(r, &old_clip);
+            SDL_Rect content_clip = {ca.x, clip_y, ca.w, ca.h - (clip_y - ca.y)};
+            SDL_RenderSetClipRect(r, &content_clip);
+            
+            parse_and_render_html(r, res.raw_body, ca.x + 20, cy - browser_scroll_y, ca.w - 40, 20000);
+            
+            SDL_RenderSetClipRect(r, &old_clip);
+        } else if (!res.error_message.empty()) {
+            ui_textC(r, ca.x+ca.w/2, cy+40, "Fetch Error", 0xCC0000FF, fXXL);
+            ui_textC(r, ca.x+ca.w/2, cy+90, res.error_message.c_str(), 0x888888FF, fMD);
         } else {
-            ui_textC(r, ca.x+ca.w/2, cy+40, "404", 0xCCCCCCFF, fXXL);
-            ui_textC(r, ca.x+ca.w/2, cy+90, "Page not found in VidyaOS virtual web", 0x888888FF, fMD);
-            ui_textC(r, ca.x+ca.w/2, cy+120, "Try: index.html, news.html, mail.html, or store.html", 0x1A0DABFF, fSM);
+            // Local files / fallback
+            std::string target_file = chrome_url;
+            if (target_file == "flathub.org" || target_file == "https://flathub.org") {
+                ui_text(r, ca.x+20, cy+10, "Flathub App Store", 0x111111FF, fLG);
+                ui_text(r, ca.x+20, cy+32, "Download sandbox Flatpak applications directly", 0x666666FF, fSM);
+                ui_line(r, ca.x+20, cy+52, ca.x+ca.w-20, cy+52, 0xDDDDDDFF);
+                
+                struct MockFlatApp { std::string name; std::string pkg; std::string desc; uint32_t color; };
+                std::vector<MockFlatApp> flat_apps = {
+                    {"Visual Studio Code", "vscode", "Developer IDE & Editor", 0x007ACCFF},
+                    {"VLC Media Player", "vlc", "Multimedia audio & video player", 0xFF8800FF},
+                    {"Mozilla Firefox", "firefox", "Secure fast web browser client", 0xE66000FF},
+                    {"GIMP Image Editor", "gimp", "GNU Image Manipulation Tool", 0x5C3A21FF}
+                };
+                
+                int item_y = cy + 64 - browser_scroll_y;
+                for (size_t a=0; a<flat_apps.size(); ++a) {
+                    ui_rounded(r, ca.x+20, item_y, ca.w-40, 52, 8, 0xFFFFFFFF);
+                    ui_border(r, ca.x+20, item_y, ca.w-40, 52, 0xE0E0E0FF);
+                    ui_rounded(r, ca.x+30, item_y+10, 32, 32, 6, flat_apps[a].color);
+                    ui_textC(r, ca.x+46, item_y+18, flat_apps[a].name.substr(0,1).c_str(), 0xFFFFFFFF, fSM);
+                    ui_text(r, ca.x+72, item_y+10, flat_apps[a].name.c_str(), 0x1D1D1FFF, fSM);
+                    ui_text(r, ca.x+72, item_y+28, flat_apps[a].desc.c_str(), 0x666666FF, fXS);
+                    
+                    bool is_inst = apt_installed_packages[flat_apps[a].pkg];
+                    int bw = 90;
+                    int bx = ca.x+ca.w-bw-30;
+                    if (is_inst) {
+                        ui_btn(r, bx, item_y+10, bw, 32, "Installed", 0xD1F2D9FF, 0x1E5631FF, fXS);
+                    } else {
+                        ui_btn(r, bx, item_y+10, bw, 32, "Download", C_ACCENT, C_TEXT_PRI, fXS);
+                        browser_links.push_back({bx, item_y+10, bx+bw, item_y+42, "download:" + flat_apps[a].pkg});
+                    }
+                    item_y += 60;
+                }
+            }
+            else {
+                if (target_file.rfind("file:///var/www/", 0) == 0) {
+                    target_file = "/var/www/" + target_file.substr(16);
+                } else if (target_file.rfind("vidyaos://", 0) == 0) {
+                    target_file = "/var/www/" + target_file.substr(10);
+                } else if (target_file == "vidyaos.local") {
+                    target_file = "/var/www/index.html";
+                } else if (target_file == "news.local") {
+                    target_file = "/var/www/news.html";
+                } else if (target_file == "mail.local") {
+                    target_file = "/var/www/mail.html";
+                } else if (target_file == "store.local") {
+                    target_file = "/var/www/store.html";
+                } else if (target_file.find('/') == std::string::npos) {
+                    target_file = "/var/www/" + target_file;
+                }
+        
+                if (virtual_files.count(target_file)) {
+                    parse_and_render_html(r, virtual_files[target_file], ca.x + 20, cy - browser_scroll_y, ca.w - 40, 20000);
+                } else {
+                    ui_textC(r, ca.x+ca.w/2, cy+40, "404", 0xCCCCCCFF, fXXL);
+                    ui_textC(r, ca.x+ca.w/2, cy+90, "Page not found in VidyaOS virtual web", 0x888888FF, fMD);
+                    ui_textC(r, ca.x+ca.w/2, cy+120, "Try navigating to google.com to test internet fetch!", 0x1A0DABFF, fSM);
+                }
+            }
         }
     }
 
@@ -2190,6 +2168,47 @@ void draw_desktop(SDL_Renderer *r, int W, int H) {
 
     // ── Context menu ────────────────────────────────────
     if (file_manager_context_menu_open) draw_context_menu(r);
+
+    // ── Developer Mode HUD ──────────────────────────────
+    if (dev_mode_enabled) {
+        int dx = W - 260, dy = H - 200 - TASKBAR_H;
+        ui_rounded(r, dx, dy, 240, 180, 8, 0x000000CC);
+        ui_border(r, dx, dy, 240, 180, 0xFFD60AFF);
+        ui_text(r, dx+10, dy+10, "🛠 Developer Mode HUD", 0xFFD60AFF, fSM);
+        ui_line(r, dx+10, dy+32, dx+230, dy+32, 0x444444FF);
+        
+        char buf[64];
+        static uint32_t last_time = 0;
+        static int frames = 0, last_fps = 0;
+        frames++;
+        uint32_t ticks = SDL_GetTicks();
+        if (ticks > last_time + 1000) {
+            last_fps = frames;
+            frames = 0;
+            last_time = ticks;
+        }
+        snprintf(buf, sizeof(buf), "FPS: %d", last_fps);
+        ui_text(r, dx+10, dy+40, buf, C_TEXT_PRI, fXS);
+        
+        snprintf(buf, sizeof(buf), "Mouse: %d, %d", mouse_x, mouse_y);
+        ui_text(r, dx+10, dy+60, buf, C_TEXT_PRI, fXS);
+        
+        snprintf(buf, sizeof(buf), "Resolution: %dx%d", W, H);
+        ui_text(r, dx+10, dy+80, buf, C_TEXT_PRI, fXS);
+        
+        snprintf(buf, sizeof(buf), "Scale: %dx", current_window_scale);
+        ui_text(r, dx+10, dy+100, buf, C_TEXT_PRI, fXS);
+        
+        int focused = -1;
+        for (int i = 0; i < 8; ++i) {
+            if (is_focused_window(i)) { focused = i; break; }
+        }
+        snprintf(buf, sizeof(buf), "Focused Win: %d", focused);
+        ui_text(r, dx+10, dy+120, buf, C_TEXT_PRI, fXS);
+        
+        snprintf(buf, sizeof(buf), "CPU: %d%% RAM: %dMB", telemetry_cpu_usage, telemetry_ram_usage);
+        ui_text(r, dx+10, dy+140, buf, C_TEXT_PRI, fXS);
+    }
 
     ++gui_frame_counter;
 }

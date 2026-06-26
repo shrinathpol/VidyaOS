@@ -2,8 +2,8 @@
 case "$1" in
   start)
     printf "Starting VidyaOS Desktop Compositor... "
-    # Redirect standard input/output to the ARM virtual serial port
-    /usr/bin/vidyaos-desktop < /dev/ttyAMA0 > /dev/ttyAMA0 2>&1 &
+    # Redirect standard input/output to the virtual serial port
+    /usr/bin/vidyaos-native < /dev/ttyS0 > /dev/ttyS0 2>&1 &
     echo "OK"
     ;;
   stop)

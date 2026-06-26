@@ -1,0 +1,6 @@
+[update]
+compatible=VidyaOS x86_64
+version=1.1.0
+
+[image.rootfs]
+filename=rootfs.ext4

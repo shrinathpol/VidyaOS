@@ -1,0 +1,83 @@
+[
+  {
+    "name": "Chrome Web Browser",
+    "package_name": "chrome",
+    "desc": "Surfing the local intranet websites",
+    "rating": 4,
+    "size": "2.4 MB",
+    "color": "0x3366FFAA",
+    "category": "Utilities"
+  },
+  {
+    "name": "Neofetch System Info",
+    "package_name": "neofetch",
+    "desc": "Linux-style system information display",
+    "rating": 5,
+    "size": "120 KB",
+    "color": "0x00FF88AA",
+    "category": "Utilities"
+  },
+  {
+    "name": "CMatrix Matrix Code",
+    "package_name": "cmatrix",
+    "desc": "Green matrix rain console animation",
+    "rating": 4,
+    "size": "350 KB",
+    "color": "0x00AA00FF",
+    "category": "Games"
+  },
+  {
+    "name": "Python Interactive REPL",
+    "package_name": "python",
+    "desc": "Interactive shell for scripting language",
+    "rating": 5,
+    "size": "4.2 MB",
+    "color": "0xFFDD00AA",
+    "category": "Development"
+  },
+  {
+    "name": "Java Runtime & Compiler",
+    "package_name": "java",
+    "desc": "Run and compile virtual java source files",
+    "rating": 4,
+    "size": "8.5 MB",
+    "color": "0xEE3300AA",
+    "category": "Development"
+  },
+  {
+    "name": "G++ C++ Compiler",
+    "package_name": "g++",
+    "desc": "Compile native-like virtual C++17 files",
+    "rating": 5,
+    "size": "12.0 MB",
+    "color": "0x0088FFAA",
+    "category": "Development"
+  },
+  {
+    "name": "GCC C Compiler",
+    "package_name": "gcc",
+    "desc": "Compile standard virtual C files in shell",
+    "rating": 4,
+    "size": "10.0 MB",
+    "color": "0x0099FFAA",
+    "category": "Development"
+  },
+  {
+    "name": "Node.js Runtime & REPL",
+    "package_name": "nodejs",
+    "desc": "JavaScript server-side run environment",
+    "rating": 5,
+    "size": "9.1 MB",
+    "color": "0x33AA33AA",
+    "category": "Development"
+  },
+  {
+    "name": "Neon Visual Theme",
+    "package_name": "theme_neon",
+    "desc": "A vibrant visual style theme pack",
+    "rating": 5,
+    "size": "45 KB",
+    "color": "0xFF00FFAA",
+    "category": "Themes"
+  }
+]

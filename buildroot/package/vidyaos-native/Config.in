@@ -1,0 +1,8 @@
+config BR2_PACKAGE_VIDYAOS_NATIVE
+	bool "vidyaos-native"
+	select BR2_PACKAGE_SDL2
+	select BR2_PACKAGE_SDL2_KMSDRM
+	select BR2_PACKAGE_SDL2_TTF
+	select BR2_PACKAGE_LIBVTERM
+	help
+	  The native display compositor, window manager, and shell for VidyaOS.

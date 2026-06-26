@@ -249,6 +249,56 @@ The SDL2 window opens simultaneously. Shell commands can be typed in **both** th
 
 ---
 
+## Build & Run — Phase 6: Bootable Linux Desktop OS (Native Target)
+
+VidyaOS can be built as a self-hosted bootable Linux operating system using the included Buildroot configurations. In this target mode, the Linux kernel boots directly to the KMS/DRM display framebuffer rendering the C++ desktop compositor without any X11 or Wayland middleware.
+
+### 📦 Buildroot Configurations
+
+The repository contains pre-configured Buildroot integration files:
+- **Target defconfig**: `buildroot/configs/vidyaos_defconfig` (configures kernel, target packages, PipeWire, BlueZ, NetworkManager, RAUC, Flatpak, and GRUB bootloader).
+- **Custom package**: `buildroot/package/vidyaos-native/` (`Config.in` and `vidyaos-native.mk` compile the local C++ codebase using the `NATIVE=1` standalone target configuration).
+- **Overlay & Init scripts**: `buildroot/board/vidyaos/rootfs_overlay/etc/init.d/S99vidyaos` starts the desktop environment binary `/usr/bin/vidyaos-native` and routes its serial interface directly to `/dev/ttyS0`.
+
+### 🛠️ Building the Bootable OS Image
+
+To build the complete bootable disk image (`sdcard.img` or `rootfs.ext4`):
+1. Download and extract [Buildroot 2024.02 LTS](https://buildroot.org/download.html) (or matching version).
+2. Copy the `buildroot` subdirectory overlays from this repository into your Buildroot directory.
+3. Load the defconfig and trigger the build:
+   ```bash
+   make vidyaos_defconfig
+   make
+   ```
+4. Build outputs will be generated in `output/images/rootfs.ext4` and `output/images/bzImage`.
+
+### 💾 Flashing to a USB Drive / Target Disk
+
+Use the provided system deployment installer script to partition, format, and flash target block devices (e.g. `/dev/sdb`):
+```bash
+sudo ./scripts/install_usb.sh /dev/sdb
+```
+The installer script formats the drive with:
+- **Partition 1 (`/boot`)**: Standard boot partition (50MB, ext4) containing `bzImage` and GRUB2 bootloader.
+- **Partition 2 (`rootfs_a`)**: Slot A primary partition containing `rootfs.ext4`.
+- **Partition 3 (`rootfs_b`)**: Slot B backup partition containing `rootfs.ext4`.
+- **Partition 4 (`data`)**: Persistent configurations and app storage containing `settings.json`.
+
+### 🔄 Dual-Slot A/B Update Testing with QEMU
+
+To test the RAUC update system locally in a virtual machine:
+```bash
+qemu-system-x86_64 \
+    -m 2G \
+    -smp 2 \
+    -drive file=/dev/sdb,format=raw \
+    -serial stdio \
+    -net nic -net user
+```
+When running natively, changing settings (Wi-Fi, Bluetooth, language locale, VPN, A/B Updates, AppArmor hardening) dynamically invokes the platform services on the guest OS (`nmcli`, `bluetoothctl`, `localectl`, `rauc`, and `espeak`).
+
+---
+
 ## Build & Run — Zephyr RTOS
 
 ### native_sim target (recommended for development)

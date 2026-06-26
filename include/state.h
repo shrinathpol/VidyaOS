@@ -247,7 +247,7 @@ struct TermPane {
 };
 extern std::vector<TermPane> term_panes;
 extern int active_term_pane_idx;
-
+extern bool dev_mode_enabled;
 extern std::string active_system_slot;
 extern std::string inactive_system_slot;
 extern bool slot_upgrade_pending;

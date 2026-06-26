@@ -1,7 +1,7 @@
 CXX ?= g++
 CC ?= gcc
 CXXFLAGS ?= -std=c++17 -O2 -Iinclude -Ithirdparty/libvterm/include
-LDFLAGS ?= -Lthirdparty/libvterm -lvterm -lpthread -lSDL2 -lSDL2_ttf -lSDL2_image -lm
+LDFLAGS ?= -Lthirdparty/libvterm -lvterm -lpthread -lSDL2 -lSDL2_ttf -lSDL2_image -lm -lcurl
 
 # If building for VidyaOS KMSDRM framebuffer target
 ifeq ($(VIDYAOS),1)
@@ -12,7 +12,7 @@ endif
 ifeq ($(NATIVE),1)
 CXXFLAGS += -DVIDYAOS_NATIVE -DVIDYAOS_KMSDRM
 LDFLAGS += -lcrypt
-PLATFORM_SRCS = platform/linux/fs.cpp platform/linux/net.cpp platform/linux/user.cpp
+PLATFORM_SRCS = platform/linux/fs.cpp platform/linux/net.cpp platform/linux/user.cpp platform/linux/browser.cpp
 else
 PLATFORM_SRCS =
 endif

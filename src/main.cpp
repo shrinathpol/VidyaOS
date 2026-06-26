@@ -3,6 +3,7 @@
 #include "graphics.h"
 #include "shell.h"
 #include "footprint.h"
+#include "browser.h"
 #include <filesystem>
 namespace fs = std::filesystem;
 #include <string.h>
@@ -215,6 +216,14 @@ static void handle_sdl_event(const SDL_Event& event, SDL_Renderer* renderer) {
             mouse_x = event.button.x;
             mouse_y = event.button.y;
             handle_right_click(mouse_x, mouse_y);
+        }
+    }
+    else if (event.type == SDL_MOUSEWHEEL) {
+        if (windows[3].open && is_focused_window(3)) {
+            // Browser scrolling
+            extern int browser_scroll_y;
+            browser_scroll_y -= event.wheel.y * 30;
+            if (browser_scroll_y < 0) browser_scroll_y = 0;
         }
     }
     else if (event.type == SDL_MOUSEBUTTONUP) {
@@ -436,6 +445,17 @@ static void handle_sdl_event(const SDL_Event& event, SDL_Renderer* renderer) {
             else if (event.key.keysym.sym == SDLK_RETURN ||
                      event.key.keysym.sym == SDLK_KP_ENTER) {
                 chrome_address_active = false;
+                chrome_url = browser_normalise_url(chrome_url);
+                browser_fetch_async(chrome_url);
+                
+                // Add to history
+                if (browser_history.empty() || browser_history.back() != chrome_url) {
+                    if (browser_history_idx + 1 < (int)browser_history.size()) {
+                        browser_history.erase(browser_history.begin() + browser_history_idx + 1, browser_history.end());
+                    }
+                    browser_history.push_back(chrome_url);
+                    browser_history_idx = browser_history.size() - 1;
+                }
             }
         }
         else if (bash_shell_active && windows[0].open && is_focused_window(0)) {
@@ -720,6 +740,10 @@ int main() {
                     }
                     set_default_metadata(bin_path, false);
                     sync_sandbox_to_virtual_files();
+#ifdef VIDYAOS_NATIVE
+                    std::string cmd = "flatpak install --assumeyes flathub " + pkg + " >/dev/null 2>&1 &";
+                    system(cmd.c_str());
+#endif
                     
                     push_notification("Installed " + appstore_apps[appstore_installing_idx].name);
                     appstore_installing_idx = -1;
