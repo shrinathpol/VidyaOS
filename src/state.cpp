@@ -90,7 +90,7 @@ std::vector<std::string> available_networks = {"VidyaNet", "HomeWiFi", "CoffeeSh
 // --- Phase 3 Multi-User & Security ---
 std::string currentUser = "shri";
 std::map<std::string, FileMeta> file_metadata;
-bool system_logged_in = false;
+bool system_logged_in = true;
 std::string login_input_buffer = "";
 std::string login_pass_buffer = "";
 int login_selected_user_idx = 0;
@@ -1578,12 +1578,10 @@ void handle_desktop_click(int x, int y, bool is_double_click) {
                 const auto& app = appstore_apps[a];
                 bool show = false;
                 if (appstore_active_category == 0) show = true;
-                else if (appstore_active_category == 1 &&
-                    (app.package_name == "python" || app.package_name == "java" ||
-                     app.package_name == "g++" || app.package_name == "gcc" || app.package_name == "nodejs")) show = true;
-                else if (appstore_active_category == 2 &&
-                    (app.package_name == "chrome" || app.package_name == "neofetch")) show = true;
-                else if (appstore_active_category == 3 && app.package_name == "cmatrix") show = true;
+                else if (appstore_active_category == 1 && app.category == "Development") show = true;
+                else if (appstore_active_category == 2 && app.category == "Utilities") show = true;
+                else if (appstore_active_category == 3 && app.category == "Games") show = true;
+                else if (appstore_active_category == 4 && app.category == "Themes") show = true;
                 if (!show) continue;
                 
                 int btn_x1 = ca_x + ca_w - bw - 20;

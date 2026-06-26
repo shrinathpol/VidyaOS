@@ -933,6 +933,148 @@ static void render_monitor(SDL_Renderer *r, int wx, int wy, int ww, int wh) {
     ui_circle(r,gx+100,gy+gh+10,5,0x0A84FFFF); ui_text(r,gx+110,gy+gh+4,"RAM",0x0A84FFFF,fXS);
 }
 
+static void parse_and_render_html(SDL_Renderer *r, const std::string& html, int start_x, int start_y, int max_w, int max_h) {
+    int cur_x = start_x;
+    int cur_y = start_y;
+    int line_h = 20;
+    
+    TTF_Font* current_font = fSM;
+    uint32_t current_color = 0x1D1D1FFF;
+    bool is_bold = false;
+    bool is_italic = false;
+    bool in_link = false;
+    std::string link_url = "";
+    
+    size_t i = 0;
+    std::string text_buffer = "";
+    
+    auto flush_text = [&]() {
+        if (text_buffer.empty()) return;
+        
+        int tw = 0, th = 0;
+        TTF_SizeUTF8(current_font, text_buffer.c_str(), &tw, &th);
+        
+        if (cur_x + tw > start_x + max_w - 20) {
+            cur_x = start_x;
+            cur_y += line_h;
+        }
+        
+        draw_ttf_text(r, cur_x, cur_y, text_buffer.c_str(), current_font, current_color);
+        
+        if (in_link) {
+            ui_line(r, cur_x, cur_y + th - 2, cur_x + tw, cur_y + th - 2, current_color);
+            browser_links.push_back({cur_x, cur_y, cur_x + tw, cur_y + th, link_url});
+        }
+        
+        cur_x += tw;
+        text_buffer.clear();
+    };
+    
+    while (i < html.size()) {
+        if (html[i] == '<') {
+            flush_text();
+            size_t tag_end = html.find('>', i);
+            if (tag_end == std::string::npos) {
+                text_buffer += html[i];
+                i++;
+                continue;
+            }
+            std::string tag_full = html.substr(i + 1, tag_end - i - 1);
+            i = tag_end + 1;
+            
+            size_t space_pos = tag_full.find(' ');
+            std::string tag = (space_pos == std::string::npos) ? tag_full : tag_full.substr(0, space_pos);
+            
+            for (auto &c : tag) c = tolower(c);
+            
+            if (tag == "h1") {
+                current_font = fXL;
+                line_h = 32;
+                cur_x = start_x;
+                cur_y += 10;
+            } else if (tag == "/h1") {
+                current_font = fSM;
+                line_h = 20;
+                cur_x = start_x;
+                cur_y += 32;
+            } else if (tag == "h2" || tag == "h3" || tag == "h4" || tag == "h5" || tag == "h6") {
+                current_font = fLG;
+                line_h = 26;
+                cur_x = start_x;
+                cur_y += 8;
+            } else if (tag == "/h2" || tag == "/h3" || tag == "/h4" || tag == "/h5" || tag == "/h6") {
+                current_font = fSM;
+                line_h = 20;
+                cur_x = start_x;
+                cur_y += 26;
+            } else if (tag == "p") {
+                cur_x = start_x;
+                cur_y += 6;
+            } else if (tag == "/p") {
+                cur_x = start_x;
+                cur_y += 20;
+            } else if (tag == "br" || tag == "br/") {
+                cur_x = start_x;
+                cur_y += line_h;
+            } else if (tag == "b" || tag == "strong") {
+                is_bold = true;
+                current_color = 0x000000FF;
+            } else if (tag == "/b" || tag == "/strong") {
+                is_bold = false;
+                current_color = 0x1D1D1FFF;
+            } else if (tag == "i" || tag == "em") {
+                is_italic = true;
+            } else if (tag == "/i" || tag == "/em") {
+                is_italic = false;
+            } else if (tag == "ul") {
+                cur_x = start_x;
+                cur_y += 6;
+            } else if (tag == "/ul") {
+                cur_x = start_x;
+                cur_y += 14;
+            } else if (tag == "li") {
+                cur_x = start_x + 16;
+                ui_circle(r, cur_x - 8, cur_y + 8, 3, 0x555555FF);
+            } else if (tag == "/li") {
+                cur_x = start_x;
+                cur_y += line_h;
+            } else if (tag == "a") {
+                in_link = true;
+                current_color = 0x1A0DABFF;
+                size_t href_pos = tag_full.find("href=");
+                if (href_pos != std::string::npos) {
+                    size_t q_start = tag_full.find('"', href_pos);
+                    if (q_start != std::string::npos) {
+                        size_t q_end = tag_full.find('"', q_start + 1);
+                        if (q_end != std::string::npos) {
+                            link_url = tag_full.substr(q_start + 1, q_end - q_start - 1);
+                        }
+                    }
+                }
+            } else if (tag == "/a") {
+                in_link = false;
+                current_color = 0x1D1D1FFF;
+                link_url = "";
+            } else if (tag == "img") {
+                int img_w = 80;
+                int img_h = 60;
+                if (cur_x + img_w > start_x + max_w - 20) {
+                    cur_x = start_x;
+                    cur_y += line_h;
+                }
+                ui_rounded(r, cur_x, cur_y, img_w, img_h, 4, 0xDFDFE1FF);
+                ui_border(r, cur_x, cur_y, img_w, img_h, 0xCCCCCCFF);
+                ui_textC(r, cur_x + img_w/2, cur_y + img_h/2 - 6, "IMG", 0x666666FF, fXS);
+                cur_x += img_w + 10;
+            }
+        } else {
+            text_buffer += html[i];
+            i++;
+        }
+    }
+    flush_text();
+}
+
 // ── Browser (window 3) ──────────────────────────────────────
 static void render_browser(SDL_Renderer *r, int wx, int wy, int ww, int wh) {
     SDL_Rect ca = content_area(wx, wy, ww, wh);
@@ -1531,12 +1673,10 @@ static void render_appstore(SDL_Renderer *r, int wx, int wy, int ww, int wh) {
         const auto &app=appstore_apps[a];
         bool show=false;
         if (appstore_active_category==0) show=true;
-        else if (appstore_active_category==1 &&
-            (app.package_name=="python"||app.package_name=="java"||
-             app.package_name=="g++"||app.package_name=="gcc"||app.package_name=="nodejs")) show=true;
-        else if (appstore_active_category==2 &&
-            (app.package_name=="chrome"||app.package_name=="neofetch")) show=true;
-        else if (appstore_active_category==3 && app.package_name=="cmatrix") show=true;
+        else if (appstore_active_category==1 && app.category == "Development") show = true;
+        else if (appstore_active_category==2 && app.category == "Utilities") show = true;
+        else if (appstore_active_category==3 && app.category == "Games") show = true;
+        else if (appstore_active_category==4 && app.category == "Themes") show = true;
         if (!show) continue;
 
         int rh=80;

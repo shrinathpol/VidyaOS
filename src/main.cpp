@@ -609,6 +609,7 @@ int main() {
     if (!sdl_window || !sdl_renderer) {
         fprintf(stderr, "[SDL2] Window/Renderer failed: %s\n", SDL_GetError());
         fprintf(stderr, "[SDL2] Running in headless CLI mode only.\n");
+        system_logged_in = true;
     } else {
         printf("[VidyaOS] Native %dx%d window ready — SDL2+TTF modern desktop UI\n",
                display_width, display_height);

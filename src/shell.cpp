@@ -1050,7 +1050,7 @@ void execute_os_command(const std::string& line_str) {
         std::string sub = args[1];
         if (sub == "list") {
             printf(ANSI_BOLD ANSI_CYAN "Desktop Windows status:\n" ANSI_RESET);
-            for (int i = 0; i < 7; i++) {
+            for (int i = 0; i < 8; i++) {
                 if (i == 3 && !apt_installed_packages["chrome"]) continue;
                 printf("  - %s: %s\n", windows[i].title,
                        windows[i].open ? (ANSI_GREEN "OPEN" ANSI_RESET) : (ANSI_RED "CLOSED" ANSI_RESET));
@@ -1059,7 +1059,7 @@ void execute_os_command(const std::string& line_str) {
         } 
         else if (sub == "open") {
             if (args.size() < 3) {
-                printf(ANSI_RED "Usage: desktop open <terminal|files|monitor|chrome|settings|controlpanel|editor>\n" ANSI_RESET);
+                printf(ANSI_RED "Usage: desktop open <terminal|files|monitor|chrome|settings|controlpanel|editor|appstore>\n" ANSI_RESET);
                 fflush(stdout);
                 return;
             }
@@ -1078,13 +1078,14 @@ void execute_os_command(const std::string& line_str) {
             }
             else if (app == "settings") { windows[4].open = true; windows[4].minimized = false; bring_to_front(4); }
             else if (app == "controlpanel" || app == "panel") { windows[5].open = true; windows[5].minimized = false; bring_to_front(5); }
-            else if (app == "editor") { windows[6].open = true; windows[6].minimized = false; bring_to_front(6); }
+            else if (app == "editor" || app == "ide") { windows[6].open = true; windows[6].minimized = false; bring_to_front(6); }
+            else if (app == "appstore" || app == "store") { windows[7].open = true; windows[7].minimized = false; bring_to_front(7); }
             else { printf(ANSI_RED "Unknown application name.\n" ANSI_RESET); }
             fflush(stdout);
         } 
         else if (sub == "close") {
             if (args.size() < 3) {
-                printf(ANSI_RED "Usage: desktop close <terminal|files|monitor|chrome|settings|controlpanel|editor>\n" ANSI_RESET);
+                printf(ANSI_RED "Usage: desktop close <terminal|files|monitor|chrome|settings|controlpanel|editor|appstore>\n" ANSI_RESET);
                 fflush(stdout);
                 return;
             }
@@ -1095,7 +1096,8 @@ void execute_os_command(const std::string& line_str) {
             else if (app == "chrome") { windows[3].open = false; chrome_address_active = false; }
             else if (app == "settings") { windows[4].open = false; }
             else if (app == "controlpanel" || app == "panel") { windows[5].open = false; }
-            else if (app == "editor") { windows[6].open = false; }
+            else if (app == "editor" || app == "ide") { windows[6].open = false; }
+            else if (app == "appstore" || app == "store") { windows[7].open = false; }
             else { printf(ANSI_RED "Unknown application name.\n" ANSI_RESET); }
             fflush(stdout);
         }
