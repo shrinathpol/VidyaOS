@@ -974,11 +974,10 @@ static void render_browser(SDL_Renderer *r, int wx, int wy, int ww, int wh) {
         ui_rounded(r, bx, ca.y+nbh+2, 90, 24, 6, active ? 0xE2E2E6FF : 0x00000000);
         ui_textC(r, bx+45, ca.y+nbh+7, label, 0x1D1D1FFF, fXS);
     };
-    draw_bookmark_tab(ca.x+10, "⭐ Google", chrome_url == "google.com");
-    draw_bookmark_tab(ca.x+110, "⭐ GitHub", chrome_url == "github.com");
-    draw_bookmark_tab(ca.x+210, "⭐ Wikipedia", chrome_url == "wikipedia.org");
-    draw_bookmark_tab(ca.x+320, "⭐ Flathub", chrome_url == "flathub.org");
-    draw_bookmark_tab(ca.x+420, "📥 Sim Download", false);
+    draw_bookmark_tab(ca.x+10, "🏠 Home", chrome_url == "index.html" || chrome_url == "vidyaos://home");
+    draw_bookmark_tab(ca.x+110, "📰 News", chrome_url == "news.html" || chrome_url == "vidyaos://news");
+    draw_bookmark_tab(ca.x+210, "✉️ Mail", chrome_url == "mail.html" || chrome_url == "vidyaos://mail");
+    draw_bookmark_tab(ca.x+320, "🛍️ Store", chrome_url == "store.html" || chrome_url == "vidyaos://store");
 
     // Content area starting below bookmarks bar
     int cy = ca.y+nbh+bmh+8;
@@ -1021,7 +1020,7 @@ static void render_browser(SDL_Renderer *r, int wx, int wy, int ww, int wh) {
             item_y += 60;
         }
     }
-    else if (chrome_url.find("google.com")!=std::string::npos || chrome_url.empty()) {
+    else if (chrome_url.find("google.com")!=std::string::npos) {
         ui_textC(r, ca.x+ca.w/2, cy+20, "G", 0x4285F4FF, fXXL);
         int gw=0,gh=0; TTF_SizeUTF8(fXXL,"G",&gw,&gh);
         std::pair<const char*,uint32_t> letters[]={{"o",0xEA4335FF},{"o",0xFBBC04FF},
@@ -1037,7 +1036,7 @@ static void render_browser(SDL_Renderer *r, int wx, int wy, int ww, int wh) {
         ui_text(r, ca.x+ca.w/2-180, cy+94, "Search VidyaOS...", 0x999999FF, fMD);
         int lnky=cy+148;
         struct {const char *t; const char *u;} lnks[]={
-            {"vidyaos.local","vidyaos.local"},
+            {"vidyaos.local","index.html"},
             {"flathub.org","flathub.org"}
         };
         for (auto &[t,u]: lnks) {
@@ -1064,10 +1063,30 @@ static void render_browser(SDL_Renderer *r, int wx, int wy, int ww, int wh) {
         ui_text(r, ca.x+30, cy+90, "designed to render standard high-fidelity desktop widgets directly", 0x1D1D1FFF, fSM);
         ui_text(r, ca.x+30, cy+110, "at the native hardware resolution using SDL2 graphic framebuffers.", 0x1D1D1FFF, fSM);
     } else {
-        ui_textC(r, ca.x+ca.w/2, cy+40, "404", 0xCCCCCCFF, fXXL);
-        ui_textC(r, ca.x+ca.w/2, cy+90, "Page not found in VidyaOS virtual web",
-                 0x888888FF, fMD);
-        ui_textC(r, ca.x+ca.w/2, cy+120, "Try: google.com", 0x1A0DABFF, fSM);
+        std::string target_file = chrome_url;
+        if (target_file.rfind("file:///var/www/", 0) == 0) {
+            target_file = "/var/www/" + target_file.substr(16);
+        } else if (target_file.rfind("vidyaos://", 0) == 0) {
+            target_file = "/var/www/" + target_file.substr(10);
+        } else if (target_file == "vidyaos.local") {
+            target_file = "/var/www/index.html";
+        } else if (target_file == "news.local") {
+            target_file = "/var/www/news.html";
+        } else if (target_file == "mail.local") {
+            target_file = "/var/www/mail.html";
+        } else if (target_file == "store.local") {
+            target_file = "/var/www/store.html";
+        } else if (target_file.find('/') == std::string::npos) {
+            target_file = "/var/www/" + target_file;
+        }
+
+        if (virtual_files.count(target_file)) {
+            parse_and_render_html(r, virtual_files[target_file], ca.x + 20, cy, ca.w - 40, ca.h - (cy - ca.y) - 20);
+        } else {
+            ui_textC(r, ca.x+ca.w/2, cy+40, "404", 0xCCCCCCFF, fXXL);
+            ui_textC(r, ca.x+ca.w/2, cy+90, "Page not found in VidyaOS virtual web", 0x888888FF, fMD);
+            ui_textC(r, ca.x+ca.w/2, cy+120, "Try: index.html, news.html, mail.html, or store.html", 0x1A0DABFF, fSM);
+        }
     }
 
     if (downloads_panel_open) {

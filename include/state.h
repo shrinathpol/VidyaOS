@@ -212,6 +212,7 @@ struct AppStoreItem {
     int rating;
     std::string size;
     uint32_t color; // representation color for mock screenshot
+    std::string category;
 };
 extern std::vector<AppStoreItem> appstore_apps;
 

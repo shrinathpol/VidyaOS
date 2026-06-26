@@ -1,0 +1,61 @@
+desktop list
+desktop open settings
+desktop open ide
+desktop open chrome
+desktop open appstore
+desktop list
+
+# --- Settings Toggling ---
+# Click at x=200, y=168 to switch to Appearance settings tab
+mouse move 200 168
+mouse click
+
+# Click at x=700, y=364 to toggle Tiling Mode ON
+mouse move 700 364
+mouse click
+desktop list
+
+# Click at x=700, y=364 again to toggle Tiling Mode OFF
+mouse move 700 364
+mouse click
+desktop list
+
+# --- Browser Bookmark Navigation ---
+# Click Home bookmark (x=160, y=158)
+mouse move 160 158
+mouse click
+
+# Click News bookmark (x=260, y=158)
+mouse move 260 158
+mouse click
+
+# Click Mail bookmark (x=360, y=158)
+mouse move 360 158
+mouse click
+
+# Click Store bookmark (x=460, y=158)
+mouse move 460 158
+mouse click
+
+# --- App Store Sidebar ---
+# Click Development category (x=180, y=153)
+mouse move 180 153
+mouse click
+desktop list
+
+# --- IDE Multiplex Pane Focus ---
+# Click IDE bottom pane tab 2 (x=480, y=470)
+mouse move 480 470
+mouse click
+
+# Click IDE bottom pane tab 3 (x=560, y=470)
+mouse move 560 470
+mouse click
+
+# --- Shell Maintenance & Diagnostics ---
+user list
+whoami
+network status
+footprint snapshot
+footprint diff
+shutdown

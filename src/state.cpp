@@ -184,14 +184,15 @@ int appstore_active_category = 0;
 int appstore_installing_idx = -1;
 int appstore_progress = 0;
 std::vector<AppStoreItem> appstore_apps = {
-    {"Chrome Web Browser", "chrome", "Surfing the local intranet websites", 4, "2.4 MB", 0x3366FFAA},
-    {"Neofetch System Info", "neofetch", "Linux-style system information display", 5, "120 KB", 0x00FF88AA},
-    {"CMatrix Matrix Code", "cmatrix", "Green matrix rain console animation", 4, "350 KB", 0x00AA00FF},
-    {"Python Interactive REPL", "python", "Interactive shell for scripting language", 5, "4.2 MB", 0xFFDD00AA},
-    {"Java Runtime & Compiler", "java", "Run and compile virtual java source files", 4, "8.5 MB", 0xEE3300AA},
-    {"G++ C++ Compiler", "g++", "Compile native-like virtual C++17 files", 5, "12.0 MB", 0x0088FFAA},
-    {"GCC C Compiler", "gcc", "Compile standard virtual C files in shell", 4, "10.0 MB", 0x0099FFAA},
-    {"Node.js Runtime & REPL", "nodejs", "JavaScript server-side run environment", 5, "9.1 MB", 0x33AA33AA}
+    {"Chrome Web Browser", "chrome", "Surfing the local intranet websites", 4, "2.4 MB", 0x3366FFAA, "Utilities"},
+    {"Neofetch System Info", "neofetch", "Linux-style system information display", 5, "120 KB", 0x00FF88AA, "Utilities"},
+    {"CMatrix Matrix Code", "cmatrix", "Green matrix rain console animation", 4, "350 KB", 0x00AA00FF, "Games"},
+    {"Python Interactive REPL", "python", "Interactive shell for scripting language", 5, "4.2 MB", 0xFFDD00AA, "Development"},
+    {"Java Runtime & Compiler", "java", "Run and compile virtual java source files", 4, "8.5 MB", 0xEE3300AA, "Development"},
+    {"G++ C++ Compiler", "g++", "Compile native-like virtual C++17 files", 5, "12.0 MB", 0x0088FFAA, "Development"},
+    {"GCC C Compiler", "gcc", "Compile standard virtual C files in shell", 4, "10.0 MB", 0x0099FFAA, "Development"},
+    {"Node.js Runtime & REPL", "nodejs", "JavaScript server-side run environment", 5, "9.1 MB", 0x33AA33AA, "Development"},
+    {"Neon Visual Theme", "theme_neon", "A vibrant visual style theme pack", 5, "45 KB", 0xFF00FFAA, "Themes"}
 };
 
 // --- Phase 3 Browser Upgrade ---
@@ -380,11 +381,123 @@ void sync_sandbox_to_virtual_files() {
         std::ofstream(root + "/version.txt") << "Vidya OS Version 1.0.0 (based on Zephyr RTOS)\n";
     }
 
-    if (!fs::exists(root + "/var/www")) {
-        fs::create_directories(root + "/var/www");
-        std::ofstream(root + "/var/www/vidyaos.local") << "<h1>VidyaOS Portal</h1>\n<p>Welcome to the official portal.</p>\n<a href=\"news.local\">Go to News Portal</a>\n<a href=\"mail.local\">Check mail system</a>\n";
-        std::ofstream(root + "/var/www/news.local") << "<h1>VidyaOS News</h1>\n<p>Phase 3 features are now live!</p>\n<a href=\"vidyaos.local\">Back to portal</a>\n";
-        std::ofstream(root + "/var/www/mail.local") << "<h1>Mail Client</h1>\n<p>You have 0 new messages.</p>\n<a href=\"vidyaos.local\">Back to portal</a>\n";
+    fs::create_directories(root + "/var/www");
+    fs::create_directories(root + "/etc/vidya");
+
+    if (!fs::exists(root + "/var/www/index.html")) {
+        std::ofstream(root + "/var/www/index.html") << "<h1>VidyaOS Home</h1>\n<p>Welcome to the <b>VidyaOS</b> local intranet portal. Explore services below:</p>\n<ul>\n  <li><a href=\"news.html\">Local News</a> - Stay updated on OS developments.</li>\n  <li><a href=\"mail.html\">Mail Client</a> - Check your system inbox.</li>\n  <li><a href=\"store.html\">Flathub Store</a> - Manage apps.</li>\n</ul>\n<br>\n<i>System status: Online</i>\n";
+    }
+    if (!fs::exists(root + "/var/www/news.html")) {
+        std::ofstream(root + "/var/www/news.html") << "<h1>VidyaOS News</h1>\n<p><b>Phase 5 is officially live!</b> The OS now supports native resolution, TrueType vector fonts, and unified settings.</p>\n<p>Read about other improvements:</p>\n<ul>\n  <li>Aero-snapping visual helper preview</li>\n  <li>AppArmor sandboxing and nftables firewall</li>\n  <li>Multiplexed bottom terminal in IDE</li>\n</ul>\n<br>\n<a href=\"index.html\">&larr; Back Home</a>\n";
+    }
+    if (!fs::exists(root + "/var/www/mail.html")) {
+        std::ofstream(root + "/var/www/mail.html") << "<h1>Inbox (0)</h1>\n<p>You have no new notifications or messages.</p>\n<br>\n<a href=\"index.html\">&larr; Back Home</a>\n";
+    }
+    if (!fs::exists(root + "/var/www/store.html")) {
+        std::ofstream(root + "/var/www/store.html") << "<h1>Flathub Store Simulator</h1>\n<p>Download and sandbox Flatpak packages directly:</p>\n<ul>\n  <li><a href=\"download:vscode\">VS Code IDE</a> (Developer tools)</li>\n  <li><a href=\"download:vlc\">VLC Player</a> (Media tools)</li>\n  <li><a href=\"download:firefox\">Firefox</a> (Utilities)</li>\n  <li><a href=\"download:gimp\">GIMP Editor</a> (Graphics)</li>\n</ul>\n<br>\n<a href=\"index.html\">&larr; Back Home</a>\n";
+    }
+    if (!fs::exists(root + "/etc/vidya/appstore.json")) {
+        std::ofstream(root + "/etc/vidya/appstore.json") << "[\n"
+            "  {\n"
+            "    \"name\": \"Chrome Web Browser\",\n"
+            "    \"package_name\": \"chrome\",\n"
+            "    \"desc\": \"Surfing the local intranet websites\",\n"
+            "    \"rating\": 4,\n"
+            "    \"size\": \"2.4 MB\",\n"
+            "    \"color\": \"0x3366FFAA\",\n"
+            "    \"category\": \"Utilities\"\n"
+            "  },\n"
+            "  {\n"
+            "    \"name\": \"Neofetch System Info\",\n"
+            "    \"package_name\": \"neofetch\",\n"
+            "    \"desc\": \"Linux-style system information display\",\n"
+            "    \"rating\": 5,\n"
+            "    \"size\": \"120 KB\",\n"
+            "    \"color\": \"0x00FF88AA\",\n"
+            "    \"category\": \"Utilities\"\n"
+            "  },\n"
+            "  {\n"
+            "    \"name\": \"CMatrix Matrix Code\",\n"
+            "    \"package_name\": \"cmatrix\",\n"
+            "    \"desc\": \"Green matrix rain console animation\",\n"
+            "    \"rating\": 4,\n"
+            "    \"size\": \"350 KB\",\n"
+            "    \"color\": \"0x00AA00FF\",\n"
+            "    \"category\": \"Games\"\n"
+            "  },\n"
+            "  {\n"
+            "    \"name\": \"Python Interactive REPL\",\n"
+            "    \"package_name\": \"python\",\n"
+            "    \"desc\": \"Interactive shell for scripting language\",\n"
+            "    \"rating\": 5,\n"
+            "    \"size\": \"4.2 MB\",\n"
+            "    \"color\": \"0xFFDD00AA\",\n"
+            "    \"category\": \"Development\"\n"
+            "  },\n"
+            "  {\n"
+            "    \"name\": \"Java Runtime & Compiler\",\n"
+            "    \"package_name\": \"java\",\n"
+            "    \"desc\": \"Run and compile virtual java source files\",\n"
+            "    \"rating\": 4,\n"
+            "    \"size\": \"8.5 MB\",\n"
+            "    \"color\": \"0xEE3300AA\",\n"
+            "    \"category\": \"Development\"\n"
+            "  },\n"
+            "  {\n"
+            "    \"name\": \"G++ C++ Compiler\",\n"
+            "    \"package_name\": \"g++\",\n"
+            "    \"desc\": \"Compile native-like virtual C++17 files\",\n"
+            "    \"rating\": 5,\n"
+            "    \"size\": \"12.0 MB\",\n"
+            "    \"color\": \"0x0088FFAA\",\n"
+            "    \"category\": \"Development\"\n"
+            "  },\n"
+            "  {\n"
+            "    \"name\": \"GCC C Compiler\",\n"
+            "    \"package_name\": \"gcc\",\n"
+            "    \"desc\": \"Compile standard virtual C files in shell\",\n"
+            "    \"rating\": 4,\n"
+            "    \"size\": \"10.0 MB\",\n"
+            "    \"color\": \"0x0099FFAA\",\n"
+            "    \"category\": \"Development\"\n"
+            "  },\n"
+            "  {\n"
+            "    \"name\": \"Node.js Runtime & REPL\",\n"
+            "    \"package_name\": \"nodejs\",\n"
+            "    \"desc\": \"JavaScript server-side run environment\",\n"
+            "    \"rating\": 5,\n"
+            "    \"size\": \"9.1 MB\",\n"
+            "    \"color\": \"0x33AA33AA\",\n"
+            "    \"category\": \"Development\"\n"
+            "  },\n"
+            "  {\n"
+            "    \"name\": \"Neon Visual Theme\",\n"
+            "    \"package_name\": \"theme_neon\",\n"
+            "    \"desc\": \"A vibrant visual style theme pack\",\n"
+            "    \"rating\": 5,\n"
+            "    \"size\": \"45 KB\",\n"
+            "    \"color\": \"0xFF00FFAA\",\n"
+            "    \"category\": \"Themes\"\n"
+            "  }\n"
+            "]\n";
+    }
+    if (!fs::exists(root + "/etc/vidya/settings.json")) {
+        std::ofstream(root + "/etc/vidya/settings.json") << "{\n"
+            "  \"theme\": \"dark\",\n"
+            "  \"scale\": 1,\n"
+            "  \"wallpaper\": 0,\n"
+            "  \"accent\": 0,\n"
+            "  \"wifi\": true,\n"
+            "  \"volume\": 100,\n"
+            "  \"vpn\": false,\n"
+            "  \"apparmor\": true,\n"
+            "  \"screen_reader\": false,\n"
+            "  \"locale\": \"en_US\",\n"
+            "  \"bluetooth\": false,\n"
+            "  \"active_slot\": \"A\",\n"
+            "  \"inactive_slot\": \"B\",\n"
+            "  \"upgrade_pending\": false\n"
+            "}\n";
     }
 
     try {
@@ -409,6 +522,71 @@ void sync_sandbox_to_virtual_files() {
     } catch (...) {}
 }
 
+void load_appstore_from_json() {
+    std::string path = "/etc/vidya/appstore.json";
+    std::string rpath = translate_path(path);
+    std::ifstream in(rpath);
+    if (!in.is_open()) return;
+
+    appstore_apps.clear();
+    std::string line;
+    AppStoreItem item;
+    bool in_item = false;
+    while (std::getline(in, line)) {
+        if (line.find("{") != std::string::npos) {
+            item = {};
+            in_item = true;
+        }
+        else if (line.find("}") != std::string::npos || line.find("},") != std::string::npos) {
+            if (in_item) {
+                appstore_apps.push_back(item);
+                in_item = false;
+            }
+        }
+        else if (in_item) {
+            size_t colon = line.find(":");
+            if (colon != std::string::npos) {
+                std::string key = line.substr(0, colon);
+                std::string val = line.substr(colon + 1);
+                
+                size_t k_start = key.find("\"");
+                size_t k_end = key.rfind("\"");
+                if (k_start != std::string::npos && k_end != std::string::npos && k_end > k_start) {
+                    key = key.substr(k_start + 1, k_end - k_start - 1);
+                }
+                
+                size_t v_start = val.find("\"");
+                size_t v_end = val.rfind("\"");
+                std::string val_str = "";
+                if (v_start != std::string::npos && v_end != std::string::npos && v_end > v_start) {
+                    val_str = val.substr(v_start + 1, v_end - v_start - 1);
+                } else {
+                    size_t first = val.find_first_not_of(" \t\r\n");
+                    size_t last = val.find_last_not_of(" \t\r\n,");
+                    if (first != std::string::npos && last != std::string::npos) {
+                        val_str = val.substr(first, last - first + 1);
+                    }
+                }
+                
+                if (key == "name") item.name = val_str;
+                else if (key == "package_name") item.package_name = val_str;
+                else if (key == "desc") item.desc = val_str;
+                else if (key == "rating") item.rating = atoi(val_str.c_str());
+                else if (key == "size") item.size = val_str;
+                else if (key == "color") {
+                    if (val_str.rfind("0x", 0) == 0) {
+                        item.color = std::stoul(val_str, nullptr, 16);
+                    } else {
+                        item.color = std::stoul(val_str);
+                    }
+                }
+                else if (key == "category") item.category = val_str;
+            }
+        }
+    }
+    in.close();
+}
+
 void save_settings_to_file() {
     std::string path = "/etc/vidya/settings.json";
     std::string rpath = translate_path(path);
@@ -422,7 +600,15 @@ void save_settings_to_file() {
             out << "  \"wallpaper\": " << settings_wallpaper_idx << ",\n";
             out << "  \"accent\": " << settings_accent_idx << ",\n";
             out << "  \"wifi\": " << (wifi_enabled ? "true" : "false") << ",\n";
-            out << "  \"volume\": " << system_volume << "\n";
+            out << "  \"volume\": " << system_volume << ",\n";
+            out << "  \"vpn\": " << (vpn_enabled ? "true" : "false") << ",\n";
+            out << "  \"apparmor\": " << (apparmor_enabled ? "true" : "false") << ",\n";
+            out << "  \"screen_reader\": " << (screen_reader_enabled ? "true" : "false") << ",\n";
+            out << "  \"locale\": \"" << current_locale << "\",\n";
+            out << "  \"bluetooth\": " << (bluetooth_enabled ? "true" : "false") << ",\n";
+            out << "  \"active_slot\": \"" << active_system_slot << "\",\n";
+            out << "  \"inactive_slot\": \"" << inactive_system_slot << "\",\n";
+            out << "  \"upgrade_pending\": " << (slot_upgrade_pending ? "true" : "false") << "\n";
             out << "}\n";
             out.close();
             sync_sandbox_to_virtual_files();
@@ -448,9 +634,6 @@ void load_settings_from_file() {
                     int sc = atoi(line.substr(colon + 1).c_str());
                     if (sc >= 1 && sc <= 4) {
                         current_window_scale = sc;
-                        if (sdl_window) {
-                            SDL_SetWindowSize(sdl_window, 320 * current_window_scale, 240 * current_window_scale);
-                        }
                     }
                 }
             }
@@ -475,9 +658,61 @@ void load_settings_from_file() {
                     system_volume = atoi(line.substr(colon + 1).c_str());
                 }
             }
+            else if (line.find("\"vpn\"") != std::string::npos) {
+                vpn_enabled = (line.find("true") != std::string::npos);
+            }
+            else if (line.find("\"apparmor\"") != std::string::npos) {
+                apparmor_enabled = (line.find("true") != std::string::npos);
+            }
+            else if (line.find("\"screen_reader\"") != std::string::npos) {
+                screen_reader_enabled = (line.find("true") != std::string::npos);
+            }
+            else if (line.find("\"locale\"") != std::string::npos) {
+                size_t colon = line.find(':');
+                if (colon != std::string::npos) {
+                    size_t q_start = line.find('"', colon);
+                    if (q_start != std::string::npos) {
+                        size_t q_end = line.find('"', q_start + 1);
+                        if (q_end != std::string::npos) {
+                            current_locale = line.substr(q_start + 1, q_end - q_start - 1);
+                        }
+                    }
+                }
+            }
+            else if (line.find("\"bluetooth\"") != std::string::npos) {
+                bluetooth_enabled = (line.find("true") != std::string::npos);
+            }
+            else if (line.find("\"active_slot\"") != std::string::npos) {
+                size_t colon = line.find(':');
+                if (colon != std::string::npos) {
+                    size_t q_start = line.find('"', colon);
+                    if (q_start != std::string::npos) {
+                        size_t q_end = line.find('"', q_start + 1);
+                        if (q_end != std::string::npos) {
+                            active_system_slot = line.substr(q_start + 1, q_end - q_start - 1);
+                        }
+                    }
+                }
+            }
+            else if (line.find("\"inactive_slot\"") != std::string::npos) {
+                size_t colon = line.find(':');
+                if (colon != std::string::npos) {
+                    size_t q_start = line.find('"', colon);
+                    if (q_start != std::string::npos) {
+                        size_t q_end = line.find('"', q_start + 1);
+                        if (q_end != std::string::npos) {
+                            inactive_system_slot = line.substr(q_start + 1, q_end - q_start - 1);
+                        }
+                    }
+                }
+            }
+            else if (line.find("\"upgrade_pending\"") != std::string::npos) {
+                slot_upgrade_pending = (line.find("true") != std::string::npos);
+            }
         }
         in.close();
     }
+    load_appstore_from_json();
 }
 
 void handle_desktop_click(int x, int y, bool is_double_click) {
@@ -1062,6 +1297,12 @@ void handle_desktop_click(int x, int y, bool is_double_click) {
                     is_dark_theme = !is_dark_theme;
                     save_settings_to_file();
                 }
+                // Tiling Mode toggle
+                else if (y >= row_y(4) + 14 && y <= row_y(4) + 40 && x >= px + pw - 60 && x <= px + pw - 12) {
+                    is_tiling_mode = !is_tiling_mode;
+                    save_settings_to_file();
+                    push_notification(is_tiling_mode ? "Tiling mode enabled" : "Tiling mode disabled");
+                }
             }
             else if (settings_active_tab == 2) { // Network
                 // Wi-Fi toggle
@@ -1072,6 +1313,7 @@ void handle_desktop_click(int x, int y, bool is_double_click) {
                 // VPN toggle
                 else if (y >= row_y(2) + 14 && y <= row_y(2) + 40 && x >= px + pw - 60 && x <= px + pw - 12) {
                     vpn_enabled = !vpn_enabled;
+                    save_settings_to_file();
                 }
             }
             else if (settings_active_tab == 3) { // Accounts
@@ -1121,12 +1363,14 @@ void handle_desktop_click(int x, int y, bool is_double_click) {
                 else if (x >= px && x <= px + 200 && y >= row_y(2) + 18 && y <= row_y(2) + 48) {
                     slot_upgrade_pending = true;
                     inactive_system_slot = "B (Version 1.1.0 Ready)";
+                    save_settings_to_file();
                     push_notification("Update applied to inactive slot B");
                 }
                 // Reboot & Swap
                 else if (slot_upgrade_pending && x >= px && x <= px + 200 && y >= row_y(3) + 18 && y <= row_y(3) + 48) {
                     std::swap(active_system_slot, inactive_system_slot);
                     slot_upgrade_pending = false;
+                    save_settings_to_file();
                     push_notification("Rebooted and swapped slot to " + active_system_slot);
                 }
             }
@@ -1134,6 +1378,7 @@ void handle_desktop_click(int x, int y, bool is_double_click) {
                 // AppArmor Toggle
                 if (y >= row_y(1) + 14 && y <= row_y(1) + 40 && x >= px + pw - 60 && x <= px + pw - 12) {
                     apparmor_enabled = !apparmor_enabled;
+                    save_settings_to_file();
                     push_notification(apparmor_enabled ? "AppArmor Policies Activated" : "AppArmor Policies Disabled");
                 }
                 // Firewall Blocks (Terminal, Browser, App Store)
@@ -1142,6 +1387,7 @@ void handle_desktop_click(int x, int y, bool is_double_click) {
                     std::string apps[] = {"Terminal", "Browser", "App Store"};
                     if (idx >= 0 && idx < 3) {
                         firewall_rules[apps[idx]] = !firewall_rules[apps[idx]];
+                        save_settings_to_file();
                         push_notification("Firewall rules updated for " + apps[idx]);
                     }
                 }
@@ -1150,18 +1396,22 @@ void handle_desktop_click(int x, int y, bool is_double_click) {
                 // Screen Reader
                 if (y >= row_y(1) + 14 && y <= row_y(1) + 40 && x >= px + pw - 60 && x <= px + pw - 12) {
                     screen_reader_enabled = !screen_reader_enabled;
+                    save_settings_to_file();
                     push_notification(screen_reader_enabled ? "Screen Reader Enabled" : "Screen Reader Disabled");
                 }
                 // Locale Selection
                 else if (y >= row_y(2) + 18 && y <= row_y(2) + 48) {
                     if (x >= px && x <= px + 70) {
                         current_locale = "en_US";
+                        save_settings_to_file();
                         push_notification("Locale changed to US English");
                     } else if (x >= px + 80 && x <= px + 150) {
                         current_locale = "es_ES";
+                        save_settings_to_file();
                         push_notification("Locale cambiado a Español");
                     } else if (x >= px + 160 && x <= px + 230) {
                         current_locale = "de_DE";
+                        save_settings_to_file();
                         push_notification("Sprachauswahl geändert in Deutsch");
                     }
                 }
@@ -1170,11 +1420,13 @@ void handle_desktop_click(int x, int y, bool is_double_click) {
                 // Living Room Light Toggle
                 if (x >= px + pw - 100 && x <= px + pw - 20 && y >= row_y(1) + 10 && y <= row_y(1) + 40) {
                     iot_devices[0].state = (iot_devices[0].state == "on") ? "off" : "on";
+                    save_settings_to_file();
                     push_notification("[MQTT] Living Room Light set to " + iot_devices[0].state);
                 }
                 // Smart Plug Toggle
                 else if (x >= px + pw - 100 && x <= px + pw - 20 && y >= row_y(3) + 10 && y <= row_y(3) + 40) {
                     iot_devices[2].state = (iot_devices[2].state == "on") ? "off" : "on";
+                    save_settings_to_file();
                     push_notification("[MQTT] Smart Plug set to " + iot_devices[2].state);
                 }
                 // Thermostat adjustment
@@ -1183,10 +1435,12 @@ void handle_desktop_click(int x, int y, bool is_double_click) {
                     if (x >= px + pw - 120 && x <= px + pw - 90) {
                         val--;
                         iot_devices[1].state = std::to_string(val) + "C";
+                        save_settings_to_file();
                         push_notification("[MQTT] Smart Thermostat decreased to " + iot_devices[1].state);
                     } else if (x >= px + pw - 50 && x <= px + pw - 20) {
                         val++;
                         iot_devices[1].state = std::to_string(val) + "C";
+                        save_settings_to_file();
                         push_notification("[MQTT] Smart Thermostat increased to " + iot_devices[1].state);
                     }
                 }
@@ -1195,6 +1449,7 @@ void handle_desktop_click(int x, int y, bool is_double_click) {
                 // Bluetooth Toggle
                 if (y >= row_y(1) + 14 && y <= row_y(1) + 40 && x >= px + pw - 60 && x <= px + pw - 12) {
                     bluetooth_enabled = !bluetooth_enabled;
+                    save_settings_to_file();
                     push_notification(bluetooth_enabled ? "Bluetooth enabled" : "Bluetooth disabled");
                 }
                 // Device connect toggling
